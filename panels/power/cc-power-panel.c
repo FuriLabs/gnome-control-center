@@ -676,6 +676,7 @@ setup_power_saving (CcPowerPanel *self)
 
   cc_number_row_bind_settings (self->blank_screen_row, self->session_settings, "idle-delay");
 
+#if 0
   /* The default values for these settings are unfortunate for us;
    * timeout == 0, action == suspend means 'do nothing' - just
    * as timout === anything, action == nothing.
@@ -716,6 +717,7 @@ setup_power_saving (CcPowerPanel *self)
       set_ac_battery_ui_mode (self);
       update_automatic_suspend_label (self);
     }
+#endif
 }
 
 static const char *

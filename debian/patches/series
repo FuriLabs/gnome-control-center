@@ -39,3 +39,4 @@ ubuntu/datetime-Fix-NTP-switch-getting-out-of-sync.patch
 ubuntu/sharing-Fix-network-row-visible-name-bug.patch
 ubuntu/display-night-light-Disconnect-config-manager-changed-han.patch
 ubuntu/display-night-light-Don-t-leak-config-manager-proxy.patch
+Check-best_mode-exist-before-adding-flag.patch

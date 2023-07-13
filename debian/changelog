@@ -1,3 +1,10 @@
+gnome-control-center (1:44.0-1ubuntu6) lunar; urgency=medium
+
+  * Add patch to fix mirror mode crash when resolution of
+    the 2 monitors don't match (LP: #2026228)
+
+ -- Dirk Su <dirk.su@canonical.com>  Fri, 07 Jul 2023 09:15:28 +0800
+
 gnome-control-center (1:44.0-1ubuntu5) lunar; urgency=medium
 
   * Cherry-pick a few fixes from upstream gnome-44 branch:

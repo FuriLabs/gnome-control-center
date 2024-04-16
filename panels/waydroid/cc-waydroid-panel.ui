@@ -5,18 +5,10 @@
 
     <property name="child">
       <object class="AdwToolbarView">
+
         <child type="top">
           <object class="AdwHeaderBar">
             <child type="end">
-              <object class="GtkToggleButton" id="install_waydroid_button">
-                <property name="use_underline">True</property>
-                <property name="valign">center</property>
-                <property name="label" translatable="yes">Install Waydroid</property>
-                <signal name="toggled" handler="cc_waydroid_panel_install_waydroid" swapped="yes"/>
-                <style>
-                  <class name="text-button"/>
-                </style>
-              </object>
             </child>
           </object>
         </child>
@@ -27,72 +19,15 @@
               <object class="GtkScrolledWindow">
                 <child>
                   <object class="AdwPreferencesPage">
-                    <child>
-                      <object class="AdwPreferencesGroup">
-                        <property name="title" translatable="yes">Waydroid image</property>
-
-                        <child>
-                          <object class="AdwActionRow" id="show_list_row">
-                            <property name="title" translatable="yes">Image type</property>
-                            <property name="subtitle" translatable="yes">Waydroid image type</property>
-                            <property name="subtitle-lines">0</property>
-                            <child>
-                              <object class="GtkBox" id="show_list_box">
-                                <property name="valign">center</property>
-                                <property name="homogeneous">True</property>
-                                <property name="margin_top">12</property>
-                                <property name="margin_bottom">12</property>
-                                <style>
-                                <class name="linked"/>
-                                </style>
-                                <child>
-                                  <object class="GtkToggleButton" id="install_vanilla">
-                                    <property name="hexpand">True</property>
-                                    <property name="label" translatable="yes">Vanilla</property>
-                                    <property name="height_request">35</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkToggleButton" id="install_gapps">
-                                    <property name="hexpand">True</property>
-                                    <property name="label" translatable="yes">GAPPS</property>
-                                    <property name="group">install_gapps</property>
-                                    <property name="height_request">35</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-
-                        <child>
-                          <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Install image</property>
-                            <property name="subtitle" translatable="yes">Install selected image</property>
-                            <property name="use-underline">true</property>
-                            <child>
-                              <object class="GtkButton" id="install_image_button">
-                                <property name="label" translatable="yes">Install</property>
-                                <property name="valign">center</property>
-                                <accessibility>
-                                  <property name="label" translatable="yes">Install image</property>
-                                </accessibility>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-
-                      </object>
-                    </child>
 
                     <child>
                       <object class="AdwPreferencesGroup">
-                        <property name="title" translatable="yes">Waydroid Settings</property>
+                        <property name="title" translatable="yes">Android App Settings</property>
 
                         <child>
                           <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Waydroid</property>
-                            <property name="subtitle" translatable="yes">Start Waydroid</property>
+                            <property name="title" translatable="yes">Android</property>
+                            <property name="subtitle" translatable="yes">Start Android Container</property>
                             <property name="use-underline">true</property>
                             <child>
                               <object class="GtkSwitch" id="waydroid_enabled_switch">
@@ -107,24 +42,8 @@
 
                         <child>
                           <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Waydroid access hardware directly</property>
-                            <property name="subtitle" translatable="yes">Will improve stability of NFC and GPS</property>
-                            <property name="use-underline">true</property>
-                            <child>
-                              <object class="GtkSwitch" id="waydroid_uevent_switch">
-                                <property name="valign">center</property>
-                                <accessibility>
-                                  <property name="label" translatable="yes">Running</property>
-                                </accessibility>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-
-                        <child>
-                          <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Waydroid IP</property>
-                            <property name="subtitle" translatable="yes">IP Address of Waydroid</property>
+                            <property name="title" translatable="yes">Android IP</property>
+                            <property name="subtitle" translatable="yes">IP Address of Android</property>
                             <property name="activatable">false</property>
                             <property name="use-underline">false</property>
                             <child>
@@ -137,10 +56,11 @@
                           </object>
                         </child>
 
+
                         <child>
                           <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Waydroid Vendor</property>
-                            <property name="subtitle" translatable="yes">Vendor type of Waydroid</property>
+                            <property name="title" translatable="yes">Android Vendor</property>
+                            <property name="subtitle" translatable="yes">Vendor type of Android</property>
                             <property name="activatable">false</property>
                             <property name="use-underline">false</property>
                             <child>
@@ -151,12 +71,13 @@
                               </object>
                             </child>
                           </object>
-                        </child>
+                        </child> -->
+
 
                         <child>
                           <object class="AdwActionRow">
-                            <property name="title" translatable="yes">Waydroid OS version</property>
-                            <property name="subtitle" translatable="yes">Waydroid LineageOS version</property>
+                            <property name="title" translatable="yes">Android OS version</property>
+                            <property name="subtitle" translatable="yes">Android LineageOS version</property>
                             <property name="activatable">false</property>
                             <property name="use-underline">false</property>
                             <child>
@@ -211,7 +132,7 @@
                                   <object class="GtkButton" id="show_ui_button">
                                     <child>
                                       <object class="GtkLabel">
-                                        <property name="label" translatable="yes">Show Waydroid</property>
+                                        <property name="label" translatable="yes">Software Store</property>
                                         <property name="wrap">FALSE</property>
                                         <property name="ellipsize">none</property>
                                       </object>

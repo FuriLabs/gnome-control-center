@@ -26,12 +26,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *install_app_button;
   GtkWidget        *show_ui_button;
   GtkWidget        *refresh_app_list_button;
-  GtkWidget        *waydroid_uevent_switch;
-  GtkWidget        *install_waydroid_button;
   GtkWidget        *waydroid_factory_reset;
-  GtkToggleButton  *install_vanilla;
-  GtkToggleButton  *install_gapps;
-  GtkWidget        *install_image_button;
 };
 
 typedef struct {
@@ -440,26 +435,6 @@ cc_waydroid_panel_show_full_ui (GtkButton *button, gpointer user_data)
   }
 }
 
-static gboolean
-cc_waydroid_panel_toggle_uevent (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
-{
-    GError *error = NULL;
-    gchar *argv[] = { "waydroid", "prop", "set", "persist.waydroid.uevent", state ? "true" : "false", NULL };
-
-    if (gtk_switch_get_state(GTK_SWITCH(self->waydroid_enabled_switch))) {
-        gint exit_status = 0;
-
-        if (!g_spawn_sync(NULL, argv, NULL,
-                          G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
-                          NULL, NULL, NULL, NULL, &exit_status, &error)) {
-            g_printerr("Error: %s\n", error->message);
-            g_error_free(error);
-        }
-    }
-
-    return FALSE;
-}
-
 static void
 cc_waydroid_factory_reset_threaded (GtkWidget *widget, CcWaydroidPanel *self)
 {
@@ -490,15 +465,10 @@ reenable_switch_and_update_info (gpointer data)
 
     gtk_widget_set_sensitive(GTK_WIDGET(self->launch_app_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), TRUE);
-    gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), TRUE);
-    gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_uevent_switch), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);
-    gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), FALSE);
-    gtk_widget_set_sensitive(GTK_WIDGET(self->install_gapps), FALSE);
-    gtk_widget_set_sensitive(GTK_WIDGET(self->install_vanilla), FALSE);
 
     g_signal_connect(G_OBJECT(self->launch_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_launch_app_threaded), self);
     g_signal_connect(G_OBJECT(self->remove_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_uninstall_app), self);
@@ -506,29 +476,8 @@ reenable_switch_and_update_info (gpointer data)
     g_signal_connect(G_OBJECT(self->show_ui_button), "clicked", G_CALLBACK(cc_waydroid_panel_show_full_ui), self);
     g_signal_connect(self->refresh_app_list_button, "clicked", G_CALLBACK(cc_waydroid_refresh_button), self);
 
-    gchar *uevent_output;
-    gchar *uevent_error;
-    gint uevent_exit_status;
-
-    g_spawn_command_line_sync("sh -c \"waydroid prop get persist.waydroid.uevent\"", &uevent_output, &uevent_error, &uevent_exit_status, NULL);
-    gboolean uevent_state = g_strstr_len(uevent_output, -1, "true") != NULL ? 0 : 1;
-    g_signal_handlers_block_by_func(self->waydroid_uevent_switch, cc_waydroid_panel_toggle_uevent, self);
-
-    if (uevent_state == 0) {
-        gtk_switch_set_state(GTK_SWITCH(self->waydroid_uevent_switch), TRUE);
-        gtk_switch_set_active(GTK_SWITCH(self->waydroid_uevent_switch), TRUE);
-    } else {
-        gtk_switch_set_state(GTK_SWITCH(self->waydroid_uevent_switch), FALSE);
-        gtk_switch_set_active(GTK_SWITCH(self->waydroid_uevent_switch), FALSE);
-    }
-
-    g_signal_handlers_unblock_by_func(self->waydroid_uevent_switch, cc_waydroid_panel_toggle_uevent, self);
-
     g_usleep(5000000);
     update_app_list_threaded(self);
-
-    g_free(uevent_output);
-    g_free(uevent_error);
 
     return G_SOURCE_REMOVE;
 }
@@ -590,210 +539,10 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
         gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_uevent_switch), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), TRUE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), TRUE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_gapps), TRUE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_vanilla), TRUE);
     }
 
     return FALSE;
-}
-
-gboolean on_install_vanilla_toggled (GtkToggleButton *togglebutton, gpointer user_data) {
-    CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-
-    g_signal_handlers_block_by_func(self->install_vanilla, on_install_vanilla_toggled, self);
-    g_signal_handlers_block_by_func(self->install_gapps, on_install_gapps_toggled, self);
-    gtk_toggle_button_set_active(self->install_vanilla, TRUE);
-    gtk_toggle_button_set_active(self->install_gapps, FALSE);
-    g_signal_handlers_unblock_by_func(self->install_vanilla, on_install_vanilla_toggled, self);
-    g_signal_handlers_unblock_by_func(self->install_gapps, on_install_gapps_toggled, self);
-
-    if (PackageState == PACKAGE_STATE_VANILLA) {
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), FALSE);
-    } else {
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), TRUE);
-    }
-
-    return TRUE;
-}
-
-gboolean on_install_gapps_toggled (GtkToggleButton *togglebutton, gpointer user_data) {
-    CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-
-    g_signal_handlers_block_by_func(self->install_vanilla, on_install_vanilla_toggled, self);
-    g_signal_handlers_block_by_func(self->install_gapps, on_install_gapps_toggled, self);
-    gtk_toggle_button_set_active(self->install_vanilla, FALSE);
-    gtk_toggle_button_set_active(self->install_gapps, TRUE);
-    g_signal_handlers_unblock_by_func(self->install_vanilla, on_install_vanilla_toggled, self);
-    g_signal_handlers_unblock_by_func(self->install_gapps, on_install_gapps_toggled, self);
-
-    if (PackageState == PACKAGE_STATE_GAPPS) {
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), FALSE);
-    } else {
-        gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), TRUE);
-    }
-
-    return TRUE;
-}
-
-gboolean check_package_and_toggle (GtkToggleButton *togglebutton, gpointer user_data) {
-    gchar *gapps_output;
-    gchar *gapps_error;
-    gint gapps_exit_status;
-    gchar *vanilla_output;
-    gchar *vanilla_error;
-    gint vanilla_exit_status;
-
-    g_spawn_command_line_sync("dpkg -s waydroid-system-custom", &gapps_output, &gapps_error, &gapps_exit_status, NULL);
-
-    if (gapps_exit_status == 0) {
-        PackageState = PACKAGE_STATE_GAPPS;
-        return on_install_gapps_toggled(togglebutton, user_data);
-    }
-
-    g_spawn_command_line_sync("dpkg -s waydroid-system", &vanilla_output, &vanilla_error, &vanilla_exit_status, NULL);
-
-    if (vanilla_exit_status == 0) {
-        PackageState = PACKAGE_STATE_VANILLA;
-        return on_install_vanilla_toggled(togglebutton, user_data);
-    }
-
-    PackageState = PACKAGE_STATE_NONE;
-    return TRUE;
-}
-
-static gpointer
-cc_waydroid_panel_install_waydroid_thread (gpointer user_data)
-{
-    ThreadData *data = (ThreadData *)user_data;
-    CcWaydroidPanel *self = data->self;
-    GtkWidget *button = data->button;
-
-    gchar *command_output;
-    gchar *command_error;
-    gint exit_status;
-
-    uid_t uid = getuid();
-    gchar *uid_str = g_strdup_printf("%d", uid);
-
-    gchar *install_command = g_strdup_printf("pkexec env XDG_RUNTIME_DIR=/run/user/%s x-terminal-emulator -e 'apt update && apt install waydroid -y && systemctl enable --now waydroid-container'", uid_str);
-
-    gboolean success = g_spawn_command_line_sync(install_command,
-                                                 &command_output,
-                                                 &command_error,
-                                                 &exit_status,
-                                                 NULL);
-
-    g_free(command_output);
-    g_free(command_error);
-    g_free(install_command);
-    g_free(uid_str);
-
-    if (success && g_file_test("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
-        g_idle_add((GSourceFunc) cc_waydroid_panel_init, self);
-    } else {
-        if (!success) {
-            g_print("Error running command: %s", command_error);
-        }
-    }
-
-    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), FALSE);
-
-    g_free(data);
-
-    return NULL;
-}
-
-static void
-cc_waydroid_panel_install_waydroid (CcWaydroidPanel *self, GtkWidget *button)
-{
-    if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(button))) {
-        return;
-    }
-
-    ThreadData *data = g_new(ThreadData, 1);
-    data->self = self;
-    data->button = button;
-
-    g_thread_new("cc_waydroid_panel_install_waydroid_thread", cc_waydroid_panel_install_waydroid_thread, data);
-}
-
-static gpointer
-cc_waydroid_panel_install_image_thread (gpointer user_data)
-{
-    ThreadData *data = (ThreadData *)user_data;
-    CcWaydroidPanel *self = data->self;
-    GtkWidget *button = data->button;
-
-    gchar *install_command = NULL;
-    gchar *dpkg_command = NULL;
-
-    uid_t uid = getuid();
-    gchar *uid_str = g_strdup_printf("%d", uid);
-
-    if (PackageState == PACKAGE_STATE_GAPPS) {
-        install_command = g_strdup_printf("pkexec env XDG_RUNTIME_DIR=/run/user/%s x-terminal-emulator -e 'apt update && rm -f /var/lib/waydroid/images/vendor.img && rm -f /var/lib/waydroid/images/system.img && rm -f /var/lib/waydroid/waydroid.cfg && apt install waydroid-system -y && waydroid init -f && mv /etc/apt/waydroid-system /etc/apt/preferences.d/waydroid-system'", uid_str);
-        dpkg_command = "dpkg -s waydroid-system-vanilla";
-    } else if (PackageState == PACKAGE_STATE_VANILLA) {
-        install_command = g_strdup_printf("pkexec env XDG_RUNTIME_DIR=/run/user/%s x-terminal-emulator -e 'mv /etc/apt/preferences.d/waydroid-system /etc/apt/waydroid-system && apt update && apt install waydroid-system-custom -y && rm -f /var/lib/waydroid/waydroid.cfg && waydroid init -f -s GAPPS'", uid_str);
-        dpkg_command = "dpkg -s waydroid-system-custom";
-    } else {
-        g_free(data);
-        return NULL;
-    }
-
-    gchar *command_output;
-    gchar *command_error;
-    gint exit_status;
-    gboolean success = g_spawn_command_line_sync(install_command, &command_output, &command_error, &exit_status, NULL);
-
-    gchar *dpkg_output;
-    gchar *dpkg_error;
-    gint dpkg_exit_status;
-    g_spawn_command_line_sync(dpkg_command, &dpkg_output, &dpkg_error, &dpkg_exit_status, NULL);
-
-    if (PackageState == PACKAGE_STATE_GAPPS) {
-        if ((success) && dpkg_exit_status == 0) {
-            PackageState = PACKAGE_STATE_VANILLA;
-            g_idle_add((GSourceFunc) cc_waydroid_panel_init, self);
-        } else {
-            if (!success) {
-                g_print("Error running command: %s", command_error);
-            }
-        }
-    } else if (PackageState == PACKAGE_STATE_VANILLA) {
-        if ((success) && dpkg_exit_status == 0) {
-            PackageState = PACKAGE_STATE_GAPPS;
-            g_idle_add((GSourceFunc) cc_waydroid_panel_init, self);
-        } else {
-            if (!success) {
-                g_print("Error running command: %s", command_error);
-            }
-        }
-    }
-
-    g_free(command_output);
-    g_free(command_error);
-
-    gtk_widget_set_sensitive(button, TRUE);
-
-    g_free(data);
-
-    return NULL;
-}
-
-static void
-cc_waydroid_panel_install_image (CcWaydroidPanel *self, GtkWidget *button)
-{
-    gtk_widget_set_sensitive(button, FALSE);
-
-    ThreadData *data = g_new(ThreadData, 1);
-    data->self = self;
-    data->button = button;
-
-    g_thread_new("cc_waydroid_panel_install_image_thread", cc_waydroid_panel_install_image_thread, data);
 }
 
 static void
@@ -849,30 +598,7 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
-                                        waydroid_uevent_switch);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        install_waydroid_button);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
                                         waydroid_factory_reset);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        install_vanilla);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        install_gapps);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcWaydroidPanel,
-                                        install_image_button);
-
-  gtk_widget_class_bind_template_callback (widget_class,
-                                           cc_waydroid_panel_install_waydroid);
 }
 
 static void
@@ -883,56 +609,21 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
   self->app_list_store = g_list_store_new (G_TYPE_APP_INFO);
 
-  g_signal_handlers_block_by_func(self->install_waydroid_button, cc_waydroid_panel_install_waydroid, self);
-  g_signal_connect(G_OBJECT(self->install_waydroid_button), "clicked", G_CALLBACK(cc_waydroid_panel_install_waydroid), self);
-  g_signal_handlers_unblock_by_func(self->install_waydroid_button, cc_waydroid_panel_install_waydroid, self);
-
   if(g_file_test("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
       g_signal_connect(G_OBJECT(self->waydroid_enabled_switch), "state-set", G_CALLBACK(cc_waydroid_panel_enable_waydroid), self);
 
-      g_signal_handlers_block_by_func(self->waydroid_uevent_switch, cc_waydroid_panel_toggle_uevent, self);
-      g_signal_connect(G_OBJECT(self->waydroid_uevent_switch), "state-set", G_CALLBACK(cc_waydroid_panel_toggle_uevent), self);
-      g_signal_handlers_unblock_by_func(self->waydroid_uevent_switch, cc_waydroid_panel_toggle_uevent, self);
-
       g_signal_connect(G_OBJECT(self->waydroid_factory_reset), "clicked", G_CALLBACK(cc_waydroid_factory_reset_threaded), self);
-      g_signal_connect(G_OBJECT(self->install_image_button), "clicked", G_CALLBACK(cc_waydroid_panel_install_image), self);
-      g_signal_connect(GTK_TOGGLE_BUTTON(self->install_vanilla), "toggled", G_CALLBACK(on_install_vanilla_toggled), self);
-      g_signal_connect(GTK_TOGGLE_BUTTON(self->install_gapps), "toggled", G_CALLBACK(on_install_gapps_toggled), self);
-
-      gtk_widget_set_sensitive(GTK_WIDGET(self->install_waydroid_button), FALSE);
 
       gchar *waydroid_output;
       gchar *waydroid_error;
       gint waydroid_exit_status;
       g_spawn_command_line_sync("sh -c \"waydroid status | awk -F'\t' '/Session/ {print $2; exit}'\"", &waydroid_output, &waydroid_error, &waydroid_exit_status, NULL);
 
-      check_package_and_toggle(NULL, self);
-
       if(g_str_has_prefix(waydroid_output, "RUNNING")) {
-          gchar *uevent_output;
-          gchar *uevent_error;
-          gint uevent_exit_status;
-
           g_signal_handlers_block_by_func(self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
           gtk_switch_set_state(GTK_SWITCH(self->waydroid_enabled_switch), TRUE);
           gtk_switch_set_active(GTK_SWITCH(self->waydroid_enabled_switch), TRUE);
           g_signal_handlers_unblock_by_func(self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
-
-          g_spawn_command_line_sync("sh -c \"waydroid prop get persist.waydroid.uevent\"", &uevent_output, &uevent_error, &uevent_exit_status, NULL);
-
-          gboolean uevent_state = g_strstr_len(uevent_output, -1, "true") != NULL ? 0 : 1;
-
-          g_signal_handlers_block_by_func(self->waydroid_uevent_switch, cc_waydroid_panel_toggle_uevent, self);
-
-          if (uevent_state == 0) {
-              gtk_switch_set_state(GTK_SWITCH(self->waydroid_uevent_switch), TRUE);
-              gtk_switch_set_active(GTK_SWITCH(self->waydroid_uevent_switch), TRUE);
-          } else {
-              gtk_switch_set_state(GTK_SWITCH(self->waydroid_uevent_switch), FALSE);
-              gtk_switch_set_active(GTK_SWITCH(self->waydroid_uevent_switch), FALSE);
-          }
-
-          g_signal_handlers_unblock_by_func(self->waydroid_uevent_switch, cc_waydroid_panel_toggle_uevent, self);
 
           gtk_widget_set_sensitive(GTK_WIDGET(self->launch_app_button), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), TRUE);
@@ -940,11 +631,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
           gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), TRUE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_uevent_switch), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), FALSE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->install_gapps), FALSE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->install_vanilla), FALSE);
 
           g_signal_connect(G_OBJECT(self->launch_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_launch_app_threaded), self);
           g_signal_connect(G_OBJECT(self->remove_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_uninstall_app), self);
@@ -956,9 +643,6 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
           update_waydroid_vendor_threaded(self);
           update_app_list_threaded(self);
           update_waydroid_version_threaded(self);
-
-          g_free(uevent_output);
-          g_free(uevent_error);
       } else {
           g_signal_handlers_block_by_func(self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
           gtk_switch_set_state(GTK_SWITCH(self->waydroid_enabled_switch), FALSE);
@@ -972,15 +656,11 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
           gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), FALSE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_uevent_switch), FALSE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->install_gapps), TRUE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->install_vanilla), TRUE);
       }
 
       g_free(waydroid_output);
       g_free(waydroid_error);
   } else {
-      gtk_widget_set_sensitive(GTK_WIDGET(self->install_waydroid_button), TRUE);
       gtk_switch_set_state(GTK_SWITCH(self->waydroid_enabled_switch), FALSE);
       gtk_switch_set_active(GTK_SWITCH(self->waydroid_enabled_switch), FALSE);
       gtk_widget_set_sensitive(self->waydroid_enabled_switch, FALSE);
@@ -992,11 +672,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
-      gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_uevent_switch), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);
-      gtk_widget_set_sensitive(GTK_WIDGET(self->install_image_button), FALSE);
-      gtk_widget_set_sensitive(GTK_WIDGET(self->install_gapps), FALSE);
-      gtk_widget_set_sensitive(GTK_WIDGET(self->install_vanilla), FALSE);
   }
 }
 

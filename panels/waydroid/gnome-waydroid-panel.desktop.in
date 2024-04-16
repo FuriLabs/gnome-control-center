@@ -1,6 +1,6 @@
 [Desktop Entry]
-Name=Waydroid
-Comment=Configure Waydroid settings
+Name=Android
+Comment=Configure Android settings
 Exec=gnome-control-center waydroid
 # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
 Icon=org.gnome.Settings-waydroid-symbolic

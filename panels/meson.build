@@ -7,6 +7,7 @@ panels = [
   'display',
   'keyboard',
   'mouse',
+  'mtp',
   'multitasking',
   'notifications',
   'online-accounts',

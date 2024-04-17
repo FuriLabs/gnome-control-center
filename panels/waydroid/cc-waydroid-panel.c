@@ -188,7 +188,7 @@ get_selected_app_pkgname (CcWaydroidPanel *self)
         gchar *output;
         gchar *error;
         gint exit_status;
-        command = g_strdup_printf("sh -c \"waydroid app list | awk -v app=\\\"%s\\\" '/Name: / && $2 == app { getline; print $2}'\"", selected_app);
+        command = g_strdup_printf("sh -c \"waydroid app list | awk -v app=\\\"%s\\\" '/Name:/ { name = substr(\\$0, index(\\$0, \\$2)); getline; if (name == app) print \\$2 }'\"", selected_app);
 
         g_spawn_command_line_sync(command, &output, &error, &exit_status, NULL);
         g_free(command);
@@ -210,29 +210,21 @@ cc_waydroid_panel_uninstall_app (GtkWidget *widget, CcWaydroidPanel *self)
 {
     gchar *pkgname = get_selected_app_pkgname(self);
     if (pkgname != NULL) {
-        if (g_strcmp0(pkgname, "com.android.documentsui") != 0 && g_strcmp0(pkgname, "com.android.contacts") != 0 &&
-            g_strcmp0(pkgname, "com.android.camera2") != 0 && g_strcmp0(pkgname, "org.lineageos.recorder") != 0 &&
-            g_strcmp0(pkgname, "com.android.gallery3d") != 0 && g_strcmp0(pkgname, "org.lineageos.jelly") != 0 &&
-            g_strcmp0(pkgname, "org.lineageos.eleven") != 0 && g_strcmp0(pkgname, "org.lineageos.etar") != 0 &&
-            g_strcmp0(pkgname, "com.android.settings") != 0 && g_strcmp0(pkgname, "com.android.calculator2") != 0 &&
-            g_strcmp0(pkgname, "com.android.deskclock") != 0 && g_strcmp0(pkgname, "com.android.traceur") != 0) {
+        gchar *remove_command = g_strdup_printf("waydroid app remove %s", g_strstrip(pkgname));
+        g_spawn_command_line_async(remove_command, NULL);
+        g_free(remove_command);
 
-            gchar *remove_command = g_strdup_printf("waydroid app remove %s", g_strstrip(pkgname));
-            g_spawn_command_line_async(remove_command, NULL);
-            g_free(remove_command);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
 
-            gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
-            gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), FALSE);
-            gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), FALSE);
-            gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
+        g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->app_selector));
+        g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->remove_app_button));
+        g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->install_app_button));
+        g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->refresh_app_list_button));
 
-            g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->app_selector));
-            g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->remove_app_button));
-            g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->install_app_button));
-            g_timeout_add_seconds(5, (GSourceFunc)gtk_widget_set_sensitive, GTK_WIDGET(self->refresh_app_list_button));
-
-            update_app_list_threaded(self);
-        }
+        update_app_list_threaded(self);
         g_free(pkgname);
     }
 }
@@ -243,10 +235,17 @@ cc_waydroid_panel_launch_app_thread (gpointer user_data)
     ThreadData *data = user_data;
     gchar *pkgname = data->pkgname;
 
-    if (pkgname != NULL) {
-        gchar *launch_command = g_strdup_printf("waydroid app launch %s", g_strstrip(pkgname));
+    if (pkgname != NULL && g_strstrip(pkgname)[0] != '\0') {
+        g_debug("Launching Waydroid application: %s", pkgname);
+
+        const gchar *home_dir = g_get_home_dir();
+        gchar *desktop_file_path = g_strdup_printf("%s/.local/share/applications/waydroid.%s.desktop", home_dir, g_strstrip(pkgname));
+        gchar *launch_command = g_strdup_printf("dex \"%s\"", desktop_file_path);
+
         g_spawn_command_line_async(launch_command, NULL);
+
         g_free(launch_command);
+        g_free(desktop_file_path);
     }
 
     g_free(pkgname);
@@ -509,7 +508,7 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
         gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_enabled_switch), FALSE);
 
         // we should find a way to query the container instead of waiting aimlessly, waydroid status isn't good enough either
-        g_timeout_add_seconds(15, reenable_switch_and_update_info, self);
+        g_timeout_add_seconds(10, reenable_switch_and_update_info, self);
     } else {
         gchar *argv[] = { "waydroid", "session", "stop", NULL };
         gint exit_status = 0;

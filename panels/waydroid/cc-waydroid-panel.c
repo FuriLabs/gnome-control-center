@@ -465,6 +465,7 @@ reenable_switch_and_update_info (gpointer data)
     gtk_widget_set_sensitive(GTK_WIDGET(self->launch_app_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), TRUE);
+    gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);

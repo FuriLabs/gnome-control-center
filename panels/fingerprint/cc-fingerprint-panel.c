@@ -55,6 +55,11 @@ refresh_enrolled_list(CcFingerprintPanel *self) {
         gtk_combo_box_text_append_text(self->finger_select_combo, fpd_fingers[i]);
     }
 
+    if (gtk_combo_box_get_active(GTK_COMBO_BOX(self->finger_select_combo)) == -1) {
+        gtk_combo_box_set_active(GTK_COMBO_BOX(self->finger_select_combo), 0);
+    }
+    gtk_widget_set_sensitive(GTK_WIDGET(self->remove_finger_button), gtk_combo_box_get_active(GTK_COMBO_BOX(self->finger_select_combo)) != -1);
+
     g_strfreev(fpd_fingers);
     g_free(fpd_output);
     g_free(fpd_error);
@@ -112,6 +117,11 @@ refresh_unenrolled_list(CcFingerprintPanel *self) {
         }
     }
 
+    if (gtk_combo_box_get_active(GTK_COMBO_BOX(self->finger_select_combo)) == -1) {
+        gtk_combo_box_set_active(GTK_COMBO_BOX(self->finger_select_combo), 0);
+    }
+    gtk_widget_set_sensitive(GTK_WIDGET(self->enroll_finger_button), gtk_combo_box_get_active(GTK_COMBO_BOX(self->finger_select_combo)) != -1);
+
     g_strfreev(fpd_fingers);
     g_free(fpd_output);
     g_free(fpd_error);
@@ -137,6 +147,18 @@ gboolean on_show_unenrolled_list_toggled(GtkToggleButton *togglebutton, gpointer
     gtk_widget_set_sensitive(GTK_WIDGET(self->enroll_finger_button), TRUE);
 
     return TRUE;
+}
+
+static void
+on_finger_select_changed(GtkComboBox *widget, CcFingerprintPanel *self) {
+    gboolean has_selection = gtk_combo_box_get_active(widget) != -1;
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->show_enrolled_list))) {
+        gtk_widget_set_sensitive(GTK_WIDGET(self->remove_finger_button), has_selection);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->enroll_finger_button), FALSE);
+    } else if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(self->show_unenrolled_list))) {
+        gtk_widget_set_sensitive(GTK_WIDGET(self->enroll_finger_button), has_selection);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->remove_finger_button), FALSE);
+    }
 }
 
 static void
@@ -365,6 +387,7 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
     g_signal_connect(GTK_TOGGLE_BUTTON(self->show_enrolled_list), "toggled", G_CALLBACK(on_show_enrolled_list_toggled), self);
     g_signal_connect(GTK_TOGGLE_BUTTON(self->show_unenrolled_list), "toggled", G_CALLBACK(on_show_unenrolled_list_toggled), self);
     g_signal_connect(G_OBJECT(self->identify_finger_button), "clicked", G_CALLBACK(cc_fingerprint_panel_identify_finger), self);
+    g_signal_connect(GTK_COMBO_BOX(self->finger_select_combo), "changed", G_CALLBACK(on_finger_select_changed), self);
 
     refresh_enrolled_list(self);
     g_thread_new("update_label_thread", update_enroll_status_label, self->enroll_status_label);

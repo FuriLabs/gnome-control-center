@@ -24,7 +24,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *launch_app_button;
   GtkWidget        *remove_app_button;
   GtkWidget        *install_app_button;
-  GtkWidget        *show_ui_button;
+  GtkWidget        *store_button;
   GtkWidget        *refresh_app_list_button;
   GtkWidget        *waydroid_factory_reset;
 };
@@ -423,15 +423,16 @@ cc_waydroid_panel_install_app (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static void
-cc_waydroid_panel_show_full_ui (GtkButton *button, gpointer user_data)
+cc_waydroid_panel_open_store (GtkButton *button, gpointer user_data)
 {
-  GError *error = NULL;
-  gchar *argv[] = {"waydroid", "show-full-ui", NULL};
+    const gchar *home_dir = g_get_home_dir();
+    gchar *desktop_file_path = g_strdup_printf("%s/.local/share/applications/waydroid.org.fdroid.fdroid.desktop", home_dir);
+    gchar *launch_command = g_strdup_printf("dex \"%s\"", desktop_file_path);
 
-  if (!g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL, NULL, &error)) {
-    g_warning("Error spawning waydroid: %s", error->message);
-    g_clear_error(&error);
-  }
+    g_spawn_command_line_async(launch_command, NULL);
+
+    g_free(launch_command);
+    g_free(desktop_file_path);
 }
 
 static void
@@ -466,14 +467,14 @@ reenable_switch_and_update_info (gpointer data)
     gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), TRUE);
-    gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), TRUE);
+    gtk_widget_set_sensitive(GTK_WIDGET(self->store_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), TRUE);
     gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);
 
     g_signal_connect(G_OBJECT(self->launch_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_launch_app_threaded), self);
     g_signal_connect(G_OBJECT(self->remove_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_uninstall_app), self);
     g_signal_connect(G_OBJECT(self->install_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_install_app), self);
-    g_signal_connect(G_OBJECT(self->show_ui_button), "clicked", G_CALLBACK(cc_waydroid_panel_show_full_ui), self);
+    g_signal_connect(G_OBJECT(self->store_button), "clicked", G_CALLBACK(cc_waydroid_panel_open_store), self);
     g_signal_connect(self->refresh_app_list_button, "clicked", G_CALLBACK(cc_waydroid_refresh_button), self);
 
     g_usleep(5000000);
@@ -537,7 +538,7 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
         gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
-        gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), FALSE);
+        gtk_widget_set_sensitive(GTK_WIDGET(self->store_button), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
         gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), TRUE);
     }
@@ -590,7 +591,7 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
-                                        show_ui_button);
+                                        store_button);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
@@ -629,14 +630,14 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
           gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), TRUE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), TRUE);
+          gtk_widget_set_sensitive(GTK_WIDGET(self->store_button), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), TRUE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);
 
           g_signal_connect(G_OBJECT(self->launch_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_launch_app_threaded), self);
           g_signal_connect(G_OBJECT(self->remove_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_uninstall_app), self);
           g_signal_connect(G_OBJECT(self->install_app_button), "clicked", G_CALLBACK(cc_waydroid_panel_install_app), self);
-          g_signal_connect(G_OBJECT(self->show_ui_button), "clicked", G_CALLBACK(cc_waydroid_panel_show_full_ui), self);
+          g_signal_connect(G_OBJECT(self->store_button), "clicked", G_CALLBACK(cc_waydroid_panel_open_store), self);
           g_signal_connect(self->refresh_app_list_button, "clicked", G_CALLBACK(cc_waydroid_refresh_button), self);
 
           update_waydroid_ip_threaded(self);
@@ -654,7 +655,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
           gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), FALSE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), FALSE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
-          gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), FALSE);
+          gtk_widget_set_sensitive(GTK_WIDGET(self->store_button), FALSE);
           gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
       }
 
@@ -670,7 +671,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_widget_set_sensitive(GTK_WIDGET(self->remove_app_button), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->install_app_button), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->app_selector), FALSE);
-      gtk_widget_set_sensitive(GTK_WIDGET(self->show_ui_button), FALSE);
+      gtk_widget_set_sensitive(GTK_WIDGET(self->store_button), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->refresh_app_list_button), FALSE);
       gtk_widget_set_sensitive(GTK_WIDGET(self->waydroid_factory_reset), FALSE);
   }

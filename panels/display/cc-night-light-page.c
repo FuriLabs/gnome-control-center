@@ -713,6 +713,21 @@ cc_night_light_page_init (CcNightLightPage *self)
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
+  gtk_widget_set_visible (GTK_WIDGET (self->stack_to), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->stack_from), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_to_hours), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_to_minutes), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->to_spinbuttons_box), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_from_minutes), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->spinbutton_from_hours), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->from_spinbuttons_box), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_to_pm), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_from_pm), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_to_am), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->button_from_am), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->box_manual), FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (self->schedule_type_row), FALSE);
+
   gtk_scale_add_mark (GTK_SCALE (self->scale_color_temperature),
                       1700, GTK_POS_BOTTOM,
                       NULL);

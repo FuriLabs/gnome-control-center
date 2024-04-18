@@ -782,7 +782,7 @@ show_user (ActUser *user, CcUserPanel *self)
                                          "enable-fingerprint-authentication")));
 
         if (show) {
-                if (!self->fingerprint_manager) {
+                /*if (!self->fingerprint_manager) {
                         self->fingerprint_manager = cc_fingerprint_manager_new (user);
                         g_signal_connect_object (self->fingerprint_manager,
                                                  "notify::state",
@@ -790,7 +790,8 @@ show_user (ActUser *user, CcUserPanel *self)
                                                  self, G_CONNECT_SWAPPED);
                 }
 
-                update_fingerprint_row_state (self, NULL, self->fingerprint_manager);
+                update_fingerprint_row_state (self, NULL, self->fingerprint_manager); */
+                gtk_widget_set_visible (GTK_WIDGET (self->fingerprint_row), FALSE);
         } else {
                 gtk_widget_set_visible (GTK_WIDGET (self->fingerprint_row), FALSE);
         }

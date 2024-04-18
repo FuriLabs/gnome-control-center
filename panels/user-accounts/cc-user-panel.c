@@ -798,7 +798,7 @@ show_user (ActUser *user, CcUserPanel *self)
 
         /* Autologin: show when local account */
         show = act_user_is_local_account (user);
-        gtk_widget_set_visible (GTK_WIDGET (self->autologin_row), show);
+        //gtk_widget_set_visible (GTK_WIDGET (self->autologin_row), show);
 
 #ifdef HAVE_MALCONTENT
         /* Parental Controls: Unavailable if user is admin or if
@@ -830,8 +830,8 @@ show_user (ActUser *user, CcUserPanel *self)
         gtk_widget_set_visible (GTK_WIDGET (self->remove_user_label), !show && act_user_is_logged_in_anywhere (user));
         gtk_widget_set_visible (GTK_WIDGET (self->back_button), !show);
         show_or_hide_back_button(self);
-        gtk_widget_set_visible (GTK_WIDGET (self->other_users), other_user_show);
-        gtk_widget_set_visible (GTK_WIDGET (self->add_user_button), show && is_admin);
+        //gtk_widget_set_visible (GTK_WIDGET (self->other_users), other_user_show);
+        //gtk_widget_set_visible (GTK_WIDGET (self->add_user_button), show && is_admin);
 
         on_permission_changed (self);
 }
@@ -1081,7 +1081,7 @@ on_permission_changed (CcUserPanel *self)
                 is_authorized = g_permission_get_allowed (G_PERMISSION (self->permission));
         }
 
-        gtk_widget_set_sensitive (self->add_user_button, is_authorized);
+        //gtk_widget_set_sensitive (self->add_user_button, is_authorized);
 
         user = get_selected_user (self);
         if (!user) {
@@ -1109,8 +1109,8 @@ on_permission_changed (CcUserPanel *self)
                 remove_unlock_tooltip (GTK_WIDGET (self->account_type_row));
 
                 if (get_autologin_possible (user)) {
-                        gtk_widget_set_visible (GTK_WIDGET (self->autologin_row), TRUE);
-                        gtk_widget_set_sensitive (GTK_WIDGET (self->autologin_row), TRUE);
+                        gtk_widget_set_visible (GTK_WIDGET (self->autologin_row), FALSE);
+                        gtk_widget_set_sensitive (GTK_WIDGET (self->autologin_row), FALSE);
 
                         remove_unlock_tooltip (GTK_WIDGET (self->autologin_row));
                 }

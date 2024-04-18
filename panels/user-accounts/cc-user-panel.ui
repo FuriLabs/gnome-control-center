@@ -133,6 +133,7 @@
                                 <property name="title" translatable="yes">A_utomatic Login</property>
                                 <property name="use_underline">True</property>
                                 <property name="activatable_widget">autologin_switch</property>
+                                <property name="visible">FALSE</property>
                                 <child type="suffix">
                                   <object class="CcListRowInfoButton">
                                     <property name="valign">center</property>
@@ -248,6 +249,7 @@
                               <object class="GtkButton" id="add_user_button">
                                 <property name="use_underline">True</property>
                                 <property name="label" translatable="yes">_Add User…</property>
+                                <property name="visible">FALSE</property>
                                 <signal name="clicked" handler="add_user" object="CcUserPanel" swapped="yes"/>
                                 <style>
                                   <class name="suggested-action"/>

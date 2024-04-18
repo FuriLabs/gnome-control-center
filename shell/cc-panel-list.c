@@ -391,6 +391,7 @@ static const gchar * const panel_order[] = {
   "mtp",
   "nfc",
   "droidian-encryption",
+  "fingerprint",
   "printers",
   "wacom",
 

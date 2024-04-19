@@ -16,6 +16,7 @@
 struct _CcWaydroidPanel {
   CcPanel            parent;
   GtkWidget        *waydroid_enabled_switch;
+  GtkWidget        *waydroid_autostart_switch;
   GtkWidget        *waydroid_ip_label;
   GtkWidget        *waydroid_vendor_label;
   GtkWidget        *waydroid_version_label;
@@ -546,6 +547,23 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
     return FALSE;
 }
 
+static gboolean
+cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  if (state) {
+    system ("touch ~/.android_enable");
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+  } else {
+    system ("rm -f ~/.android_enable");
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+  }
+
+  return FALSE;
+}
+
+
 static void
 cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
 {
@@ -560,6 +578,10 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
                                         waydroid_enabled_switch);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcWaydroidPanel,
+                                        waydroid_autostart_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
@@ -612,6 +634,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
   if(g_file_test("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
       g_signal_connect(G_OBJECT(self->waydroid_enabled_switch), "state-set", G_CALLBACK(cc_waydroid_panel_enable_waydroid), self);
+      g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
 
       g_signal_connect(G_OBJECT(self->waydroid_factory_reset), "clicked", G_CALLBACK(cc_waydroid_factory_reset_threaded), self);
 
@@ -619,6 +642,17 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gchar *waydroid_error;
       gint waydroid_exit_status;
       g_spawn_command_line_sync("sh -c \"waydroid status | awk -F'\t' '/Session/ {print $2; exit}'\"", &waydroid_output, &waydroid_error, &waydroid_exit_status, NULL);
+
+      gchar *file_path = g_build_filename(g_get_home_dir(), ".android_enable", NULL);
+      if (g_file_test (file_path, G_FILE_TEST_EXISTS)) {
+          gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+          gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+      } else {
+          gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+          gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+      }
+
+      g_free(file_path);
 
       if(g_str_has_prefix(waydroid_output, "RUNNING")) {
           g_signal_handlers_block_by_func(self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);

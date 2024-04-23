@@ -699,6 +699,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_switch_set_state(GTK_SWITCH(self->waydroid_enabled_switch), FALSE);
       gtk_switch_set_active(GTK_SWITCH(self->waydroid_enabled_switch), FALSE);
       gtk_widget_set_sensitive(self->waydroid_enabled_switch, FALSE);
+      gtk_widget_set_sensitive (self->waydroid_autostart_switch, FALSE);
       gtk_label_set_text(GTK_LABEL(self->waydroid_vendor_label), "");
       gtk_label_set_text(GTK_LABEL(self->waydroid_version_label), "");
       gtk_widget_set_sensitive(GTK_WIDGET(self->launch_app_button), FALSE);

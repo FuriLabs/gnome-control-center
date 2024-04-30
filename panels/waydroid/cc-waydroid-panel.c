@@ -96,15 +96,34 @@ update_waydroid_ip (gpointer user_data)
     gchar *waydroid_ip_output;
     gchar *waydroid_ip_error;
     gint waydroid_ip_exit_status;
+    gchar **lines;
+    gchar *ip_address = NULL;
 
-    g_spawn_command_line_sync("sh -c \"waydroid status | awk -F'\t' '/IP/ {print $2; exit}'\"", &waydroid_ip_output, &waydroid_ip_error, &waydroid_ip_exit_status, NULL);
+    g_spawn_command_line_sync("waydroid status", &waydroid_ip_output, &waydroid_ip_error, &waydroid_ip_exit_status, NULL);
+
+    lines = g_strsplit(waydroid_ip_output, "\n", -1);
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "IP address:\t")) {
+            gchar **fields = g_strsplit(lines[i], "\t", 2);
+            if (fields[1]) {
+                ip_address = g_strdup(fields[1]);
+                g_strchomp(ip_address);
+            }
+            g_strfreev(fields);
+            break;
+        }
+    }
+
+    g_strfreev(lines);
 
     ThreadData *data = g_new(ThreadData, 1);
     data->self = self;
-    data->waydroid_ip_output = waydroid_ip_output;
+    data->waydroid_ip_output = ip_address;
 
     g_idle_add(update_label_idle, data);
 
+    g_free(waydroid_ip_output);
     g_free(waydroid_ip_error);
 
     return NULL;
@@ -285,15 +304,34 @@ update_waydroid_vendor (gpointer user_data)
     gchar *waydroid_vendor_output;
     gchar *waydroid_vendor_error;
     gint waydroid_vendor_exit_status;
+    gchar **lines;
+    gchar *vendor_info = NULL;
 
-    g_spawn_command_line_sync("sh -c \"waydroid status | awk -F'\t' '/Vendor/ {print $2; exit}'\"", &waydroid_vendor_output, &waydroid_vendor_error, &waydroid_vendor_exit_status, NULL);
+    g_spawn_command_line_sync("waydroid status", &waydroid_vendor_output, &waydroid_vendor_error, &waydroid_vendor_exit_status, NULL);
+
+    lines = g_strsplit(waydroid_vendor_output, "\n", -1);
+
+    for (int i = 0; lines[i] != NULL; i++) {
+        if (g_str_has_prefix(lines[i], "Vendor type:\t")) {
+            gchar **fields = g_strsplit(lines[i], "\t", 2);
+            if (fields[1]) {
+                vendor_info = g_strdup(fields[1]);
+                g_strchomp(vendor_info);
+            }
+            g_strfreev(fields);
+            break;
+        }
+    }
+
+    g_strfreev(lines);
 
     ThreadData *data = g_new(ThreadData, 1);
     data->self = self;
-    data->waydroid_vendor_output = waydroid_vendor_output;
+    data->waydroid_vendor_output = vendor_info;
 
     g_idle_add(update_vendor_idle, data);
 
+    g_free(waydroid_vendor_output);
     g_free(waydroid_vendor_error);
 
     return NULL;

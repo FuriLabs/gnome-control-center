@@ -80,10 +80,13 @@ update_config_value (const char* config_key, const char* config_value)
 }
 
 gboolean
-powersave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
+powersave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("POWERSAVE", state ? "true" : "false");
 
+    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
+    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
+
     if (ret == 0)
         return TRUE;
     else
@@ -91,10 +94,13 @@ powersave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 }
 
 gboolean
-offline_switch_state_set (GtkSwitch*, gboolean state, gpointer)
+offline_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("OFFLINE", state ? "true" : "false");
 
+    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
+    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
+
     if (ret == 0)
         return TRUE;
     else
@@ -102,10 +108,13 @@ offline_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 }
 
 gboolean
-gpusave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
+gpusave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("GPUSAVE", state ? "true" : "false");
 
+    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
+    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
+
     if (ret == 0)
         return TRUE;
     else
@@ -113,10 +122,13 @@ gpusave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 }
 
 gboolean
-chargesave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
+chargesave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("CHARGESAVE", state ? "true" : "false");
 
+    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
+    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
+
     if (ret == 0)
         return TRUE;
     else
@@ -124,10 +136,13 @@ chargesave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 }
 
 gboolean
-bussave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
+bussave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("BUSSAVE", state ? "true" : "false");
 
+    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
+    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
+
     if (ret == 0)
         return TRUE;
     else
@@ -135,9 +150,12 @@ bussave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 }
 
 gboolean
-btsave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
+btsave_switch_state_set (GtkSwitch *switch_widget, gboolean state, gpointer)
 {
     int ret = update_config_value ("BTSAVE", state ? "true" : "false");
+
+    gtk_switch_set_state (GTK_SWITCH (switch_widget), state);
+    gtk_switch_set_active (GTK_SWITCH (switch_widget), state);
 
     if (ret == 0)
         return TRUE;

@@ -33,21 +33,33 @@ cc_nfc_panel_enable_nfc (GtkSwitch *widget, gboolean state, CcNfcPanel *self)
     GError *error = NULL;
     gint exit_status = 0;
 
+    g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+
     if (state) {
         g_spawn_command_line_sync ("systemctl enable --now nfcd", &standard_output, &standard_error, &exit_status, &error);
+        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
     } else {
         g_spawn_command_line_sync ("systemctl disable --now nfcd", &standard_output, &standard_error, &exit_status, &error);
+        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
     }
+
+    g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
 
     if (error != NULL) {
         g_printerr ("Error: %s\n", error->message);
         g_error_free (error);
+        g_free (standard_output);
+        g_free (standard_error);
+
+        return FALSE;
     }
 
     g_free (standard_output);
     g_free (standard_error);
 
-    return FALSE;
+    return TRUE;
 }
 
 static void
@@ -92,10 +104,12 @@ cc_nfc_panel_init (CcNfcPanel *self)
           if (nfc_exit_status == 0) {
               g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
               gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+              gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
               g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
           } else {
               g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
               gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+              gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
               g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
           }
 

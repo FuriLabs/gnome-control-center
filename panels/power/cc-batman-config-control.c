@@ -31,7 +31,7 @@ read_batman_config ()
     g_key_file_free(keyfile);
 }
 
-void
+int
 update_config_value (const char* config_key, const char* config_value)
 {
     FILE *src, *dst;
@@ -43,14 +43,14 @@ update_config_value (const char* config_key, const char* config_value)
     src = fopen (BATMAN_CONFIG_FILE, "r");
     if (src == NULL) {
         perror("Failed to open file");
-        return;
+        return -1;
     }
 
     dst = fopen (BATMAN_TEMP_FILE, "w");
     if (dst == NULL) {
         perror("Failed to open temp file");
         fclose(src);
-        return;
+        return -1;
     }
 
     while ((read = getline (&line, &len, src)) != -1) {
@@ -75,45 +75,77 @@ update_config_value (const char* config_key, const char* config_value)
 
     // Replace the original file with the modified one
     rename (BATMAN_TEMP_FILE, BATMAN_CONFIG_FILE);
+
+    return 0;
 }
 
 gboolean
 powersave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 {
-    update_config_value ("POWERSAVE", state ? "true" : "false");
+    int ret = update_config_value ("POWERSAVE", state ? "true" : "false");
+
+    if (ret == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 gboolean
 offline_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 {
-    update_config_value ("OFFLINE", state ? "true" : "false");
+    int ret = update_config_value ("OFFLINE", state ? "true" : "false");
+
+    if (ret == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 gboolean
 gpusave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 {
-    update_config_value ("GPUSAVE", state ? "true" : "false");
+    int ret = update_config_value ("GPUSAVE", state ? "true" : "false");
+
+    if (ret == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 gboolean
 chargesave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 {
-    update_config_value ("CHARGESAVE", state ? "true" : "false");
+    int ret = update_config_value ("CHARGESAVE", state ? "true" : "false");
+
+    if (ret == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 gboolean
 bussave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 {
-    update_config_value ("BUSSAVE", state ? "true" : "false");
+    int ret = update_config_value ("BUSSAVE", state ? "true" : "false");
+
+    if (ret == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 gboolean
 btsave_switch_state_set (GtkSwitch*, gboolean state, gpointer)
 {
-    update_config_value ("BTSAVE", state ? "true" : "false");
+    int ret = update_config_value ("BTSAVE", state ? "true" : "false");
+
+    if (ret == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
-void
+int
 max_cpu_entry_apply (AdwEntryRow* sender, gpointer)
 {
     int max_cpu_usage = g_ascii_strtoull(
@@ -129,7 +161,7 @@ max_cpu_entry_apply (AdwEntryRow* sender, gpointer)
     FILE *file = fopen (BATMAN_CONFIG_FILE, "r");
     if (file == NULL) {
         perror("Unable to open config file");
-        exit(1);
+        return -1;
     }
 
     char line[256];
@@ -156,10 +188,12 @@ max_cpu_entry_apply (AdwEntryRow* sender, gpointer)
     file = fopen (BATMAN_CONFIG_FILE, "w");
     if (file == NULL) {
         perror ("Unable to open config file");
-        exit (1);
+        return -1;
     }
 
     fprintf (file, "%s", config_data);
 
     fclose (file);
+
+    return 0;
 }

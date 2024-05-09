@@ -25,7 +25,10 @@ extern BatmanConfig batman_config;
 void
 read_batman_config ();
 
-void
+int
+update_config_value (const char* config_key, const char* config_value);
+
+int
 update_batman_config_value (const char* config_key, const char* config_value);
 
 gboolean
@@ -46,5 +49,5 @@ bussave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
 gboolean
 btsave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
 
-void
+int
 max_cpu_entry_apply (AdwEntryRow* sender, gpointer);

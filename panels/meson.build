@@ -7,6 +7,7 @@ panels = [
   'display',
   'droidian-encryption',
   'fingerprint',
+  'gps',
   'keyboard',
   'mouse',
   'mtp',

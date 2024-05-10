@@ -45,6 +45,9 @@ struct _CcPowerPanel
   AdwDialog         *automatic_suspend_dialog;
   CcListRow         *automatic_suspend_row;
   AdwEntryRow       *batman_max_cpu_row;
+  GtkSwitch         *batman_waydroidsave_switch;
+  GtkSwitch         *batman_wifisave_switch;
+  GtkSwitch         *batman_hybrissave_switch;
   GtkSwitch         *batman_btsave_switch;
   GtkSwitch         *batman_bussave_switch;
   GtkSwitch         *batman_chargesave_switch;
@@ -1250,6 +1253,9 @@ cc_power_panel_class_init (CcPowerPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, automatic_suspend_dialog);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, automatic_suspend_row);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_max_cpu_row);
+  gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_waydroidsave_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_wifisave_switch);
+  gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_hybrissave_switch);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_btsave_switch);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_bussave_switch);
   gtk_widget_class_bind_template_child (widget_class, CcPowerPanel, batman_chargesave_switch);
@@ -1351,6 +1357,18 @@ cc_power_panel_init (CcPowerPanel *self)
   g_string_free (max_cpu_str, TRUE);
 
   g_signal_connect (self->batman_max_cpu_row, "apply", G_CALLBACK (max_cpu_entry_apply), NULL);
+
+  gtk_switch_set_state (GTK_SWITCH (self->batman_waydroidsave_switch), batman_config.waydroidsave);
+  gtk_switch_set_active (GTK_SWITCH (self->batman_waydroidsave_switch), batman_config.waydroidsave);
+  g_signal_connect (self->batman_waydroidsave_switch, "state-set", G_CALLBACK (waydroidsave_switch_state_set), NULL);
+
+  gtk_switch_set_state (GTK_SWITCH (self->batman_wifisave_switch), batman_config.wifisave);
+  gtk_switch_set_active (GTK_SWITCH (self->batman_wifisave_switch), batman_config.wifisave);
+  g_signal_connect (self->batman_wifisave_switch, "state-set", G_CALLBACK (wifisave_switch_state_set), NULL);
+
+  gtk_switch_set_state (GTK_SWITCH (self->batman_hybrissave_switch), batman_config.hybrissave);
+  gtk_switch_set_active (GTK_SWITCH (self->batman_hybrissave_switch), batman_config.hybrissave);
+  g_signal_connect (self->batman_hybrissave_switch, "state-set", G_CALLBACK (hybrissave_switch_state_set), NULL);
 
   gtk_switch_set_state (GTK_SWITCH (self->batman_btsave_switch), batman_config.btsave);
   gtk_switch_set_active (GTK_SWITCH (self->batman_btsave_switch), batman_config.btsave);

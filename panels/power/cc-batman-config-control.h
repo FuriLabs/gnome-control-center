@@ -18,6 +18,9 @@ typedef struct {
     gboolean bussave;
     gboolean gpusave;
     gboolean btsave;
+    gboolean hybrissave;
+    gboolean wifisave;
+    gboolean waydroidsave;
 } BatmanConfig;
 
 extern BatmanConfig batman_config;
@@ -48,6 +51,15 @@ bussave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
 
 gboolean
 btsave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
+
+gboolean
+hybrissave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
+
+gboolean
+wifisave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
+
+gboolean
+waydroidsave_switch_state_set (GtkSwitch* sender, gboolean state, gpointer data);
 
 int
 max_cpu_entry_apply (AdwEntryRow* sender, gpointer);

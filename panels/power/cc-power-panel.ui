@@ -253,6 +253,42 @@
                     </child>
                   </object>
                 </child>
+                <child>
+                  <object class="AdwActionRow" id="batman_hybrissave_row">
+                    <property name="title" translatable="yes">Hybris save</property>
+                    <property name="subtitle" translatable="yes">Allow batman to set Android services to powersave</property>
+                    <property name="activatable_widget">batman_hybrissave_switch</property>
+                    <child>
+                      <object class="GtkSwitch" id="batman_hybrissave_switch">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwActionRow" id="batman_wifi_row">
+                    <property name="title" translatable="yes">WiFi save</property>
+                    <property name="subtitle" translatable="yes">Allow batman to set the WiFi chip to powersave</property>
+                    <property name="activatable_widget">batman_wifisave_switch</property>
+                    <child>
+                      <object class="GtkSwitch" id="batman_wifisave_switch">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwActionRow" id="batman_waydroidsave_row">
+                    <property name="title" translatable="yes">Android save</property>
+                    <property name="subtitle" translatable="yes">Allow batman to set Android container to powersave</property>
+                    <property name="activatable_widget">batman_waydroidsave_switch</property>
+                    <child>
+                      <object class="GtkSwitch" id="batman_waydroidsave_switch">
+                        <property name="valign">center</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
             </child>
           </object>

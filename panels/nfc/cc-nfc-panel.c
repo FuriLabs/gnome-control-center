@@ -28,38 +28,37 @@ cc_nfc_panel_finalize (GObject *object)
 static gboolean
 cc_nfc_panel_enable_nfc (GtkSwitch *widget, gboolean state, CcNfcPanel *self)
 {
-    gchar *standard_output = NULL;
-    gchar *standard_error = NULL;
-    GError *error = NULL;
-    gint exit_status = 0;
+  gchar *standard_output = NULL, *standard_error = NULL;
+  GError *error = NULL;
+  gint exit_status = 0;
 
-    g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+  g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
 
-    if (state) {
-        g_spawn_command_line_sync ("systemctl enable --now nfcd", &standard_output, &standard_error, &exit_status, &error);
-        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
-        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
-    } else {
-        g_spawn_command_line_sync ("systemctl disable --now nfcd", &standard_output, &standard_error, &exit_status, &error);
-        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
-        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
-    }
+  if (state) {
+    g_spawn_command_line_sync ("systemctl enable --now nfcd", &standard_output, &standard_error, &exit_status, &error);
+    gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+  } else {
+    g_spawn_command_line_sync ("systemctl disable --now nfcd", &standard_output, &standard_error, &exit_status, &error);
+    gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+  }
 
-    g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+  g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
 
-    if (error != NULL) {
-        g_printerr ("Error: %s\n", error->message);
-        g_error_free (error);
-        g_free (standard_output);
-        g_free (standard_error);
-
-        return FALSE;
-    }
-
+  if (error != NULL) {
+    g_printerr ("Error: %s\n", error->message);
+    g_error_free (error);
     g_free (standard_output);
     g_free (standard_error);
 
-    return TRUE;
+    return FALSE;
+  }
+
+  g_free (standard_output);
+  g_free (standard_error);
+
+  return TRUE;
 }
 
 static void
@@ -83,41 +82,39 @@ cc_nfc_panel_init (CcNfcPanel *self)
   g_resources_register (cc_nfc_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  gchar *output = NULL;
-  gchar *error = NULL;
+  gchar *output = NULL, *error = NULL;
   gint exit_status;
   g_spawn_command_line_sync ("systemctl --no-pager --quiet is-failed nfcd", &output, &error, &exit_status, NULL);
 
   if (g_file_test ("/usr/sbin/nfcd", G_FILE_TEST_EXISTS)) {
-      if (exit_status == 0) {
-          gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
-      } else {
-          g_signal_connect (G_OBJECT (self->nfc_enabled_switch), "state-set", G_CALLBACK (cc_nfc_panel_enable_nfc), self);
-
-          // Check if nfcd is running
-          gchar *nfc_output;
-          gchar *nfc_error;
-          gint nfc_exit_status;
-          g_spawn_command_line_sync ("systemctl is-active -q nfcd", &nfc_output, &nfc_error, &nfc_exit_status, NULL);
-
-          // If the nfcd is active, set the switch to ON
-          if (nfc_exit_status == 0) {
-              g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-              gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
-              gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
-              g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-          } else {
-              g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-              gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
-              gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
-              g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-          }
-
-          g_free (nfc_output);
-          g_free (nfc_error);
-      }
-  } else {
+    if (exit_status == 0) {
       gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
+    } else {
+      g_signal_connect (G_OBJECT (self->nfc_enabled_switch), "state-set", G_CALLBACK (cc_nfc_panel_enable_nfc), self);
+
+      // Check if nfcd is running
+      gchar *nfc_output, *nfc_error;
+      gint nfc_exit_status;
+      g_spawn_command_line_sync ("systemctl is-active -q nfcd", &nfc_output, &nfc_error, &nfc_exit_status, NULL);
+
+      // If the nfcd is active, set the switch to ON
+      if (nfc_exit_status == 0) {
+        g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+        g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+      } else {
+        g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+        g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+      }
+
+      g_free (nfc_output);
+      g_free (nfc_error);
+    }
+  } else {
+    gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
   }
 
   g_free (output);

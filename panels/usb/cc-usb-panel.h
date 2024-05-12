@@ -11,9 +11,9 @@
 
 G_BEGIN_DECLS
 
-#define CC_TYPE_MTP_PANEL (cc_mtp_panel_get_type ())
-G_DECLARE_FINAL_TYPE (CcMtpPanel, cc_mtp_panel, CC, MTP_PANEL, CcPanel)
+#define CC_TYPE_USB_PANEL (cc_usb_panel_get_type ())
+G_DECLARE_FINAL_TYPE (CcUsbPanel, cc_usb_panel, CC, USB_PANEL, CcPanel)
 
-CcMtpPanel *cc_mtp_panel_new (void);
+CcUsbPanel *cc_usb_panel_new (void);
 
 G_END_DECLS

@@ -10,7 +10,6 @@ panels = [
   'gps',
   'keyboard',
   'mouse',
-  'mtp',
   'multitasking',
   'nfc',
   'notifications',
@@ -23,6 +22,7 @@ panels = [
   'sound',
   'system',
   'universal-access',
+  'usb',
   'waydroid',
  'wwan',
 ]

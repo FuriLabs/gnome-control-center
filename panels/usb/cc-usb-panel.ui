@@ -1,18 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="4.0"/>
-  <template class="CcMtpPanel" parent="CcPanel">
+  <template class="CcUsbPanel" parent="CcPanel">
     <property name="child">
       <object class="AdwToolbarView">
         <child type="top">
           <object class="AdwHeaderBar">
-            <child type="end">
-              <object class="GtkSwitch" id="mtp_enabled_switch">
-                <accessibility>
-                  <property name="label" translatable="yes">Enable MTP Server</property>
-                </accessibility>
-              </object>
-            </child>
           </object>
         </child>
         <property name="content">
@@ -23,7 +16,24 @@
                   <object class="AdwPreferencesPage">
                     <child>
                       <object class="AdwPreferencesGroup">
-                        <property name="title" translatable="yes">MTP Settings</property>
+                        <property name="title" translatable="yes">USB Settings</property>
+
+                        <child>
+                          <object class="AdwActionRow">
+                            <property name="title" translatable="yes">MTP State</property>
+                            <property name="subtitle" translatable="yes">Enable or disable MTP</property>
+                            <property name="use-underline">true</property>
+                            <child>
+                              <object class="GtkSwitch" id="mtp_enabled_switch">
+                                <property name="valign">center</property>
+                                <accessibility>
+                                  <property name="label" translatable="yes">Enable MTP Server</property>
+                                 </accessibility>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
                         <child>
                           <object class="AdwActionRow">
                             <property name="title" translatable="yes">USB State</property>

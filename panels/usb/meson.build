@@ -11,11 +11,11 @@ i18n.merge_file(
 )
 
 sources = files(
-  'cc-mtp-panel.c'
+  'cc-usb-panel.c'
 )
 
 resource_data = files(
-  'cc-mtp-panel.ui'
+  'cc-usb-panel.ui'
 )
 
 sources += gnome.compile_resources(

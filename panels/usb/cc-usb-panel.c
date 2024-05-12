@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include "cc-mtp-panel.h"
-#include "cc-mtp-resources.h"
+#include "cc-usb-panel.h"
+#include "cc-usb-resources.h"
 #include "cc-util.h"
 
 #include <adwaita.h>
@@ -13,23 +13,23 @@
 #include <gio/gdesktopappinfo.h>
 #include <glib/gi18n.h>
 
-struct _CcMtpPanel {
+struct _CcUsbPanel {
   CcPanel            parent;
   GtkWidget        *mtp_enabled_switch;
   GtkComboBoxText  *usb_state_dropdown;
   GtkWidget        *help_button;
 };
 
-G_DEFINE_TYPE (CcMtpPanel, cc_mtp_panel, CC_TYPE_PANEL)
+G_DEFINE_TYPE (CcUsbPanel, cc_usb_panel, CC_TYPE_PANEL)
 
 static void
-cc_mtp_panel_finalize (GObject *object)
+cc_usb_panel_finalize (GObject *object)
 {
-  G_OBJECT_CLASS (cc_mtp_panel_parent_class)->finalize (object);
+  G_OBJECT_CLASS (cc_usb_panel_parent_class)->finalize (object);
 }
 
 static gboolean
-cc_mtp_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcMtpPanel *self) {
+cc_usb_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcUsbPanel *self) {
   if (state) {
     system ("rm -f ~/.mtp_disable");
     system ("systemctl --user start mtp-server");
@@ -41,8 +41,8 @@ cc_mtp_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcMtpPanel *self) {
   return FALSE;
 }
 
-static gchar
-*get_config_file_path () {
+static gchar *
+get_config_file_path () {
   if (g_file_test ("/usr/lib/droidian/device/mtp-configfs.conf", G_FILE_TEST_EXISTS)) {
     return "/usr/lib/droidian/device/mtp-configfs.conf";
   } else if (g_file_test ("/etc/mtp-configfs.conf", G_FILE_TEST_EXISTS)) {
@@ -53,7 +53,7 @@ static gchar
 }
 
 static void
-cc_mtp_panel_help_button_clicked (GtkButton *button, CcMtpPanel *self)
+cc_usb_panel_help_button_clicked (GtkButton *button, CcUsbPanel *self)
 {
   const gchar *selected_mode = gtk_combo_box_get_active_id (GTK_COMBO_BOX (self->usb_state_dropdown));
   gchar *message;
@@ -74,7 +74,7 @@ cc_mtp_panel_help_button_clicked (GtkButton *button, CcMtpPanel *self)
 }
 
 static void
-cc_mtp_panel_usb_state_changed (GtkComboBox *widget, CcMtpPanel *self)
+cc_usb_panel_usb_state_changed (GtkComboBox *widget, CcUsbPanel *self)
 {
   const gchar *new_mode = gtk_combo_box_get_active_id (widget);
   GError *error = NULL;
@@ -123,33 +123,33 @@ cc_mtp_panel_usb_state_changed (GtkComboBox *widget, CcMtpPanel *self)
 }
 
 static void
-cc_mtp_panel_class_init (CcMtpPanelClass *klass)
+cc_usb_panel_class_init (CcUsbPanelClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
-  object_class->finalize = cc_mtp_panel_finalize;
+  object_class->finalize = cc_usb_panel_finalize;
 
   gtk_widget_class_set_template_from_resource (widget_class,
-                                               "/org/gnome/control-center/mtp/cc-mtp-panel.ui");
+                                               "/org/gnome/control-center/usb/cc-usb-panel.ui");
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcMtpPanel,
+                                        CcUsbPanel,
                                         mtp_enabled_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcMtpPanel,
+                                        CcUsbPanel,
                                         usb_state_dropdown);
 
   gtk_widget_class_bind_template_child (widget_class,
-                                        CcMtpPanel,
+                                        CcUsbPanel,
                                         help_button);
 }
 
 static void
-cc_mtp_panel_init (CcMtpPanel *self)
+cc_usb_panel_init (CcUsbPanel *self)
 {
-  g_resources_register (cc_mtp_get_resource ());
+  g_resources_register (cc_usb_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
   gchar *config_file_path = get_config_file_path ();
@@ -161,9 +161,9 @@ cc_mtp_panel_init (CcMtpPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->help_button), FALSE);
   } else {
     if (g_file_test ("/usr/bin/mtp-server", G_FILE_TEST_EXISTS)) {
-      g_signal_connect (G_OBJECT (self->mtp_enabled_switch), "state-set", G_CALLBACK (cc_mtp_panel_enable_mtp), self);
-      g_signal_connect (G_OBJECT (self->usb_state_dropdown), "changed", G_CALLBACK (cc_mtp_panel_usb_state_changed), self);
-      g_signal_connect (G_OBJECT (self->help_button), "clicked", G_CALLBACK (cc_mtp_panel_help_button_clicked), self);
+      g_signal_connect (G_OBJECT (self->mtp_enabled_switch), "state-set", G_CALLBACK (cc_usb_panel_enable_mtp), self);
+      g_signal_connect (G_OBJECT (self->usb_state_dropdown), "changed", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
+      g_signal_connect (G_OBJECT (self->help_button), "clicked", G_CALLBACK (cc_usb_panel_help_button_clicked), self);
 
       gchar *mtp_output;
       gchar *mtp_error;
@@ -205,8 +205,8 @@ cc_mtp_panel_init (CcMtpPanel *self)
   }
 }
 
-CcMtpPanel *
-cc_mtp_panel_new (void)
+CcUsbPanel *
+cc_usb_panel_new (void)
 {
-  return CC_MTP_PANEL (g_object_new (CC_TYPE_MTP_PANEL, NULL));
+  return CC_USB_PANEL (g_object_new (CC_TYPE_USB_PANEL, NULL));
 }

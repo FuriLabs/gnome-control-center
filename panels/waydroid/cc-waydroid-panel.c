@@ -21,10 +21,13 @@
 #define WAYDROID_SESSION_DBUS_PATH          "/SessionManager"
 #define WAYDROID_SESSION_DBUS_INTERFACE     "id.waydro.SessionManager"
 
+#define LINE_SIZE 1024
+
 struct _CcWaydroidPanel {
   CcPanel            parent;
   GtkWidget        *waydroid_enabled_switch;
   GtkWidget        *waydroid_autostart_switch;
+  GtkWidget        *waydroid_shared_folder_switch;
   GtkWidget        *waydroid_ip_label;
   GtkWidget        *waydroid_vendor_label;
   GtkWidget        *waydroid_version_label;
@@ -264,6 +267,131 @@ waydroid_get_version (void)
   g_object_unref (waydroid_proxy);
 
   return version;
+}
+
+void
+waydroid_mount_shared (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_CONTAINER_DBUS_NAME,
+    WAYDROID_CONTAINER_DBUS_PATH,
+    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_print ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "MountSharedFolder",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling MountSharedFolder: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (waydroid_proxy);
+}
+
+void
+waydroid_umount_shared (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_CONTAINER_DBUS_NAME,
+    WAYDROID_CONTAINER_DBUS_PATH,
+    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_print ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "UnmountSharedFolder",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling UnmountSharedFolder: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (waydroid_proxy);
+}
+
+int
+is_mounted (const char *path)
+{
+  FILE *fp;
+  char *line = NULL;
+  size_t len = 0;
+  int found = 0;
+
+  fp = fopen ("/proc/mounts", "r");
+  if (fp == NULL) {
+    perror ("Failed to open /proc/mounts");
+    return -1;
+  }
+
+  while (getline (&line, &len, fp) != -1) {
+    char *mount_point;
+
+    char *line_copy = strdup (line);
+    if (line_copy == NULL) {
+      perror ("Failed to allocate memory");
+      free (line);
+      fclose (fp);
+      return -1;
+    }
+
+    strtok (line_copy, " ");
+    mount_point = strtok (NULL, " ");
+
+    if (mount_point != NULL && strcmp (mount_point, path) == 0) {
+      found = 1;
+      free (line_copy);
+      break;
+    }
+
+    free (line_copy);
+  }
+
+  free (line);
+  fclose (fp);
+
+  return found;
 }
 
 static gboolean
@@ -609,10 +737,10 @@ static void
 cc_waydroid_panel_install_app (GtkWidget *widget, CcWaydroidPanel *self)
 {
   GtkFileChooserNative *native = gtk_file_chooser_native_new ("Choose an APK",
-                                                             GTK_WINDOW (gtk_widget_get_root (widget)),
-                                                             GTK_FILE_CHOOSER_ACTION_OPEN,
-                                                             "Open",
-                                                             "Cancel");
+                                                              GTK_WINDOW (gtk_widget_get_root (widget)),
+                                                              GTK_FILE_CHOOSER_ACTION_OPEN,
+                                                              "Open",
+                                                              "Cancel");
 
   GtkFileFilter *filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (filter, "APK files");
@@ -748,7 +876,7 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
   return FALSE;
 }
 
-static gboolean
+static void
 cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
 {
   if (state) {
@@ -760,8 +888,20 @@ cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel 
     gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
     gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
   }
+}
 
-  return FALSE;
+static void
+cc_waydroid_panel_shared_folder (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  if (state) {
+    waydroid_mount_shared ();
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+  } else {
+    waydroid_umount_shared ();
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+  }
 }
 
 static void
@@ -782,6 +922,10 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
                                         waydroid_autostart_switch);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcWaydroidPanel,
+                                        waydroid_shared_folder_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
@@ -835,15 +979,20 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
   if (g_file_test ("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
     g_signal_connect (G_OBJECT (self->waydroid_enabled_switch), "state-set", G_CALLBACK (cc_waydroid_panel_enable_waydroid), self);
     g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
+    g_signal_connect (G_OBJECT (self->waydroid_shared_folder_switch), "state-set", G_CALLBACK (cc_waydroid_panel_shared_folder), self);
     g_signal_connect (G_OBJECT (self->waydroid_factory_reset), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
 
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
     if (g_file_test (file_path, G_FILE_TEST_EXISTS)) {
+      g_signal_handlers_block_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+      g_signal_handlers_unblock_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
     } else {
+      g_signal_handlers_block_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+      g_signal_handlers_unblock_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
     }
 
     g_free (file_path);
@@ -856,12 +1005,6 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
       g_signal_handlers_unblock_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
 
-      gtk_widget_set_sensitive (GTK_WIDGET (self->launch_app_button), TRUE);
-      gtk_widget_set_sensitive (GTK_WIDGET (self->remove_app_button), TRUE);
-      gtk_widget_set_sensitive (GTK_WIDGET (self->install_app_button), TRUE);
-      gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), TRUE);
-      gtk_widget_set_sensitive (GTK_WIDGET (self->store_button), TRUE);
-      gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), TRUE);
       gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), FALSE);
 
       g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_launch_app_threaded), self);
@@ -869,6 +1012,22 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       g_signal_connect (G_OBJECT (self->install_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_install_app), self);
       g_signal_connect (G_OBJECT (self->store_button), "clicked", G_CALLBACK (cc_waydroid_panel_open_store), self);
       g_signal_connect (self->refresh_app_list_button, "clicked", G_CALLBACK (cc_waydroid_refresh_button), self);
+
+      const gchar *home_dir = g_get_home_dir();
+      gchar *android_dir_path = g_strdup_printf("%s/Android", home_dir);
+      if (is_mounted (android_dir_path)) {
+        g_signal_handlers_block_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+        gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+        gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+        g_signal_handlers_unblock_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+      } else {
+        g_signal_handlers_block_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+        gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+        gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+        g_signal_handlers_unblock_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+      }
+
+      g_free (android_dir_path);
 
       update_waydroid_ip_threaded (self);
       update_waydroid_vendor_threaded (self);
@@ -895,6 +1054,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
     gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
     gtk_widget_set_sensitive (self->waydroid_enabled_switch, FALSE);
     gtk_widget_set_sensitive (self->waydroid_autostart_switch, FALSE);
+    gtk_widget_set_sensitive (self->waydroid_shared_folder_switch, FALSE);
     gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), "");
     gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
     gtk_widget_set_sensitive (GTK_WIDGET (self->launch_app_button), FALSE);

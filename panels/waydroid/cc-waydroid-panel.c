@@ -13,6 +13,14 @@
 #include <glib/gi18n.h>
 #include <unistd.h>
 
+#define WAYDROID_CONTAINER_DBUS_NAME          "id.waydro.Container"
+#define WAYDROID_CONTAINER_DBUS_PATH          "/ContainerManager"
+#define WAYDROID_CONTAINER_DBUS_INTERFACE     "id.waydro.ContainerManager"
+
+#define WAYDROID_SESSION_DBUS_NAME          "id.waydro.Session"
+#define WAYDROID_SESSION_DBUS_PATH          "/SessionManager"
+#define WAYDROID_SESSION_DBUS_INTERFACE     "id.waydro.SessionManager"
+
 struct _CcWaydroidPanel {
   CcPanel            parent;
   GtkWidget        *waydroid_enabled_switch;
@@ -32,11 +40,11 @@ struct _CcWaydroidPanel {
 
 typedef struct {
     CcWaydroidPanel *self;
-    gchar *waydroid_ip_output;
-    gchar *waydroid_vendor_output;
-    gchar *new_version_output;
     gchar **apps;
     gchar *pkgname;
+    gchar *waydroid_ip_output;
+    gchar *waydroid_vendor_output;
+    gchar *waydroid_version_output;
 } ThreadData;
 
 G_DEFINE_TYPE (CcWaydroidPanel, cc_waydroid_panel, CC_TYPE_PANEL)
@@ -47,6 +55,217 @@ cc_waydroid_panel_finalize (GObject *object)
   G_OBJECT_CLASS (cc_waydroid_panel_parent_class)->finalize (object);
 }
 
+gchar *
+waydroid_get_state (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gchar *state = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_CONTAINER_DBUS_NAME,
+    WAYDROID_CONTAINER_DBUS_PATH,
+    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "GetSession",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling GetSession: %s\n", error->message);
+    g_clear_error (&error);
+  } else {
+    GVariant *inner_dict;
+    GVariantIter iter;
+    gchar *key, *value;
+
+    inner_dict = g_variant_get_child_value (result, 0);
+
+    g_variant_iter_init (&iter, inner_dict);
+
+    while (g_variant_iter_next (&iter, "{ss}", &key, &value)) {
+      if (g_strcmp0 (key, "state") == 0) {
+        state = g_strdup (value);
+        g_free (key);
+        g_free (value);
+        break;
+      }
+      g_free (key);
+      g_free (value);
+    }
+
+    g_variant_unref (inner_dict);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (waydroid_proxy);
+
+  return state;
+}
+
+gchar *
+waydroid_get_vendor (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gchar *vendor = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SESSION,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_SESSION_DBUS_NAME,
+    WAYDROID_SESSION_DBUS_PATH,
+    WAYDROID_SESSION_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "VendorType",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling VendorType: %s\n", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get (result, "(s)", &vendor);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (waydroid_proxy);
+
+  return vendor;
+}
+
+gchar *
+waydroid_get_ip (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gchar *ip = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SESSION,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_SESSION_DBUS_NAME,
+    WAYDROID_SESSION_DBUS_PATH,
+    WAYDROID_SESSION_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "IpAddress",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling IpAddress: %s\n", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get (result, "(s)", &ip);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (waydroid_proxy);
+
+  return ip;
+}
+
+gchar *
+waydroid_get_version (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gchar *version = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SESSION,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_SESSION_DBUS_NAME,
+    WAYDROID_SESSION_DBUS_PATH,
+    WAYDROID_SESSION_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "LineageVersion",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling LineageVersion: %s\n", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get (result, "(s)", &version);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (waydroid_proxy);
+
+  return version;
+}
+
 static gboolean
 child_stdout_callback (GIOChannel *channel, GIOCondition condition, gpointer data)
 {
@@ -54,9 +273,8 @@ child_stdout_callback (GIOChannel *channel, GIOCondition condition, gpointer dat
   gsize size;
 
   if (g_io_channel_read_line(channel, &string, &size, NULL, NULL) == G_IO_STATUS_NORMAL) {
-    if (strstr (string, "Android with user 0 is ready") != NULL) {
+    if (strstr (string, "Android with user 0 is ready") != NULL)
         g_io_channel_shutdown (channel, FALSE, NULL);
-    }
   }
 
   g_free (string);
@@ -70,9 +288,9 @@ child_exited_callback (GPid pid, gint status, gpointer data)
 }
 
 static gboolean
-update_label_idle (gpointer user_data)
+update_ip_idle (gpointer user_data)
 {
-  ThreadData *data = user_data;
+  ThreadData *data = (ThreadData *) user_data;
 
   gtk_label_set_text (GTK_LABEL (data->self->waydroid_ip_label), data->waydroid_ip_output);
 
@@ -86,36 +304,18 @@ static gpointer
 update_waydroid_ip (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-  gchar *waydroid_ip_output, *waydroid_ip_error;
-  gint waydroid_ip_exit_status;
-  gchar *ip_address = NULL, **lines;
+  gchar *ip_address = NULL;
 
-  g_spawn_command_line_sync ("waydroid status", &waydroid_ip_output, &waydroid_ip_error, &waydroid_ip_exit_status, NULL);
-
-  lines = g_strsplit (waydroid_ip_output, "\n", -1);
-
-  for (int i = 0; lines[i] != NULL; i++) {
-    if (g_str_has_prefix (lines[i], "IP address:\t")) {
-      gchar **fields = g_strsplit (lines[i], "\t", 2);
-      if (fields[1]) {
-        ip_address = g_strdup (fields[1]);
-        g_strchomp (ip_address);
-      }
-      g_strfreev (fields);
-      break;
-    }
-  }
-
-  g_strfreev (lines);
+  ip_address = waydroid_get_ip ();
 
   ThreadData *data = g_new (ThreadData, 1);
   data->self = self;
-  data->waydroid_ip_output = ip_address;
+  data->waydroid_ip_output = g_strdup (ip_address);
 
-  g_idle_add (update_label_idle, data);
+  g_idle_add (update_ip_idle, data);
 
-  g_free (waydroid_ip_output);
-  g_free (waydroid_ip_error);
+  if (ip_address)
+    g_free(ip_address);
 
   return NULL;
 }
@@ -276,7 +476,7 @@ cc_waydroid_panel_launch_app_threaded (GtkWidget *widget, CcWaydroidPanel *self)
 static gboolean
 update_vendor_idle (gpointer user_data)
 {
-  ThreadData *data = user_data;
+  ThreadData *data = (ThreadData *) user_data;
 
   gtk_label_set_text (GTK_LABEL (data->self->waydroid_vendor_label), data->waydroid_vendor_output);
 
@@ -290,35 +490,18 @@ static gpointer
 update_waydroid_vendor (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-  gchar *waydroid_vendor_output, *waydroid_vendor_error, **lines, *vendor_info = NULL;
-  gint waydroid_vendor_exit_status;
+  gchar *vendor_info = NULL;
 
-  g_spawn_command_line_sync ("waydroid status", &waydroid_vendor_output, &waydroid_vendor_error, &waydroid_vendor_exit_status, NULL);
-
-  lines = g_strsplit (waydroid_vendor_output, "\n", -1);
-
-  for (int i = 0; lines[i] != NULL; i++) {
-    if (g_str_has_prefix (lines[i], "Vendor type:\t")) {
-      gchar **fields = g_strsplit (lines[i], "\t", 2);
-      if (fields[1]) {
-        vendor_info = g_strdup (fields[1]);
-        g_strchomp (vendor_info);
-      }
-      g_strfreev (fields);
-      break;
-    }
-  }
-
-  g_strfreev(lines);
+  vendor_info = waydroid_get_vendor ();
 
   ThreadData *data = g_new (ThreadData, 1);
   data->self = self;
-  data->waydroid_vendor_output = vendor_info;
+  data->waydroid_vendor_output = g_strdup (vendor_info);
 
   g_idle_add (update_vendor_idle, data);
 
-  g_free (waydroid_vendor_output);
-  g_free (waydroid_vendor_error);
+  if (vendor_info)
+    g_free (vendor_info);
 
   return NULL;
 }
@@ -332,11 +515,11 @@ update_waydroid_vendor_threaded (CcWaydroidPanel *self)
 static gboolean
 update_version_idle (gpointer user_data)
 {
-  ThreadData *data = user_data;
+  ThreadData *data = (ThreadData *) user_data;
 
-  gtk_label_set_text (GTK_LABEL (data->self->waydroid_version_label), data->new_version_output);
+  gtk_label_set_text (GTK_LABEL (data->self->waydroid_version_label), data->waydroid_version_output);
 
-  g_free (data->new_version_output);
+  g_free (data->waydroid_version_output);
   g_free (data);
 
   return G_SOURCE_REMOVE;
@@ -346,23 +529,18 @@ static gpointer
 update_waydroid_version (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-  gchar *waydroid_version_output, *waydroid_version_error;
-  gint waydroid_version_exit_status;
+  gchar *version = NULL;
 
-  g_spawn_command_line_sync ("sh -c \"waydroid prop get ro.lineage.display.version\"", &waydroid_version_output, &waydroid_version_error, &waydroid_version_exit_status, NULL);
-
-  gchar **parts = g_strsplit (waydroid_version_output, "-", 3);
-  gchar *new_version_output = g_strconcat (parts[0], "-", parts[1], NULL);
+  version = waydroid_get_version ();
 
   ThreadData *data = g_new (ThreadData, 1);
   data->self = self;
-  data->new_version_output = new_version_output;
+  data->waydroid_version_output = g_strdup (version);
 
   g_idle_add (update_version_idle, data);
 
-  g_strfreev (parts);
-  g_free (waydroid_version_output);
-  g_free (waydroid_version_error);
+  if (version)
+    g_free (version);
 
   return NULL;
 }
@@ -659,11 +837,6 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
     g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
     g_signal_connect (G_OBJECT (self->waydroid_factory_reset), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
 
-    gchar *waydroid_output, *waydroid_error;
-    gint waydroid_exit_status;
-
-    g_spawn_command_line_sync ("sh -c \"waydroid status | awk -F'\t' '/Session/ {print $2; exit}'\"", &waydroid_output, &waydroid_error, &waydroid_exit_status, NULL);
-
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
     if (g_file_test (file_path, G_FILE_TEST_EXISTS)) {
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
@@ -675,7 +848,9 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
     g_free (file_path);
 
-    if (g_str_has_prefix (waydroid_output, "RUNNING")) {
+    gchar *current_state = waydroid_get_state ();
+
+    if (current_state != NULL && g_strcmp0(current_state, "RUNNING") == 0) {
       g_signal_handlers_block_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
@@ -714,8 +889,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), FALSE);
     }
 
-    g_free (waydroid_output);
-    g_free (waydroid_error);
+    g_free (current_state);
   } else {
     gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
     gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);

@@ -154,7 +154,7 @@
 
                     <child>
                       <object class="CcListRow" id="parental_controls_row">
-                        <property name="visible" bind-source="CcUserPage" bind-property="is-admin" bind-flags="invert-boolean|sync-create"/>
+                        <property name="visible">FALSE</property>
                         <property name="title" translatable="yes">_Parental Controls</property>
                         <property name="subtitle" translatable="yes">Open the Parental Controls app</property>
                         <property name="subtitle-lines">0</property>
@@ -188,7 +188,7 @@
 
                         <child>
                           <object class="GtkButton" id="remove_user_button">
-                            <property name="visible" bind-source="CcUserPage" bind-property="is-current-user" bind-flags="invert-boolean"/>
+                            <property name="visible">FALSE</property>
                             <property name="sensitive" bind-source="CcUserPage" bind-property="editable" bind-flags="sync-create"/>
                             <property name="label" translatable="yes">_Remove User</property>
                             <property name="use-underline">True</property>

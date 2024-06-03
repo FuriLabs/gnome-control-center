@@ -7,5 +7,7 @@
     <file preprocess="xml-stripblanks">cc-display-customization.ui</file>
     <file>display-arrangement.css</file>
     <file>night-light.css</file>
+    <file>preview.css</file>
+    <file>customization-preview-01.jpg</file>
   </gresource>
 </gresources>

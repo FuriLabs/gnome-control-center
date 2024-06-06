@@ -125,6 +125,95 @@ waydroid_get_state (void)
   return state;
 }
 
+gboolean
+waydroid_get_nfc_status (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  gboolean nfc_status = FALSE;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_CONTAINER_DBUS_NAME,
+    WAYDROID_CONTAINER_DBUS_PATH,
+    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "GetNfcStatus",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    G_MAXINT,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling GetNfcStatus: %s\n", error->message);
+    g_clear_error (&error);
+  } else {
+    g_variant_get(result, "(b)", &nfc_status);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (waydroid_proxy);
+
+  return nfc_status;
+}
+
+void
+waydroid_toggle_nfc (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_CONTAINER_DBUS_NAME,
+    WAYDROID_CONTAINER_DBUS_PATH,
+    WAYDROID_CONTAINER_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "NfcToggle",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling NfcToggle: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (waydroid_proxy);
+}
+
 gchar *
 waydroid_get_vendor (void)
 {
@@ -351,6 +440,88 @@ waydroid_umount_shared (void)
   g_object_unref (waydroid_proxy);
 }
 
+void
+waydroid_remove_app (const gchar *package_name)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SESSION,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_SESSION_DBUS_NAME,
+    WAYDROID_SESSION_DBUS_PATH,
+    WAYDROID_SESSION_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_print ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "RemoveApp",
+    g_variant_new("(s)", package_name),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling RemoveApp: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (waydroid_proxy);
+}
+
+void
+waydroid_install_app (const gchar *package_path)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SESSION,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_SESSION_DBUS_NAME,
+    WAYDROID_SESSION_DBUS_PATH,
+    WAYDROID_SESSION_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_print ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "InstallApp",
+    g_variant_new("(s)", package_path),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling InstallApp: %s\n", error->message);
+    g_clear_error (&error);
+  }
+
+  g_object_unref (waydroid_proxy);
+}
+
 int
 is_mounted (const char *path)
 {
@@ -547,9 +718,8 @@ cc_waydroid_panel_uninstall_app (GtkWidget *widget, CcWaydroidPanel *self)
 {
   gchar *pkgname = get_selected_app_pkgname (self);
   if (pkgname != NULL) {
-    gchar *remove_command = g_strdup_printf ("waydroid app remove %s", g_strstrip (pkgname));
-    g_spawn_command_line_async (remove_command, NULL);
-    g_free (remove_command);
+    gchar *stripped_pkgname = g_strstrip (pkgname);
+    waydroid_remove_app (stripped_pkgname);
 
     gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->remove_app_button), FALSE);
@@ -690,30 +860,12 @@ cc_waydroid_refresh_button (GtkButton *button, gpointer user_data)
   update_app_list_threaded (self);
 }
 
-void
-on_dialog_response (GtkDialog *dialog, gint response_id, CcWaydroidPanel *self)
-{
-  if (response_id == GTK_RESPONSE_ACCEPT) {
-    char *filename;
-    GFile *file = gtk_file_chooser_get_file (GTK_FILE_CHOOSER (dialog));
-    filename = g_file_get_path (file);
-    gchar *install_command = g_strdup_printf ("waydroid app install %s", g_strstrip (filename));
-    g_spawn_command_line_async (install_command, NULL);
-    g_free (install_command);
-    g_free (filename);
-  }
-
-  g_object_unref (dialog);
-}
-
 static void
 install_app (CcWaydroidPanel *self, GFile *file)
 {
   gchar *file_path = g_file_get_path (file);
-  gchar *command = g_strdup_printf ("waydroid app install %s", file_path);
-  g_spawn_command_line_sync (command, NULL, NULL, NULL, NULL);
+  waydroid_install_app (file_path);
 
-  g_free (command);
   g_free (file_path);
 
   update_app_list_threaded (self);

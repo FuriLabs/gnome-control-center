@@ -1196,7 +1196,7 @@ gboolean
 batman_service_active_switch_state_set (GtkSwitch* sender, gboolean state, gpointer)
 {
     const gchar* ctl_argv[] = {
-        "pkexec", "systemctl", (state) ? "start" : "stop", "batman", NULL
+        "systemctl", (state) ? "start" : "stop", "batman", NULL
     };
     GSubprocess* ctl_proc = g_subprocess_newv (ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
     g_subprocess_communicate_async (ctl_proc, NULL, NULL, batman_ctl_active_cb, sender);
@@ -1207,7 +1207,7 @@ gboolean
 batman_service_enabled_switch_state_set (GtkSwitch* sender, gboolean state, gpointer)
 {
     const gchar* ctl_argv[] = {
-        "pkexec", "systemctl", (state) ? "enable" : "disable", "batman", NULL
+        "systemctl", (state) ? "enable" : "disable", "batman", NULL
     };
     GSubprocess* ctl_proc = g_subprocess_newv (ctl_argv, G_SUBPROCESS_FLAGS_NONE, NULL);
     g_subprocess_communicate_async (ctl_proc, NULL, NULL, batman_ctl_enabled_cb, sender);

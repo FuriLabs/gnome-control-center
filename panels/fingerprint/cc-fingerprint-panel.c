@@ -24,6 +24,9 @@ struct _CcFingerprintPanel {
   GtkBox           *show_list_box;
   GtkToggleButton  *show_enrolled_list;
   GtkToggleButton  *show_unenrolled_list;
+  gboolean         enrollment_done;
+  gboolean         identification_done;
+  gboolean         finger_limit_reached;
 };
 
 typedef struct {
@@ -260,71 +263,79 @@ set_label_text (gpointer data)
   gchar *text_chomped = g_strchomp (g_strdup (label_text_data->text));
   gchar *text_with_percent = g_strconcat (text_chomped, "%", NULL);
 
-  gtk_widget_set_visible (GTK_WIDGET (label_text_data->label), TRUE);
-  gtk_label_set_text (GTK_LABEL (label_text_data->label), text_with_percent);
+  if (text_with_percent) {
+    gtk_widget_set_visible (GTK_WIDGET (label_text_data->label), TRUE);
+    gtk_label_set_text (GTK_LABEL (label_text_data->label), text_with_percent);
+    g_free (text_with_percent);
+  }
 
-  g_free (text_with_percent);
   g_free (text_chomped);
   g_free (label_text_data->text);
   g_free (label_text_data);
   return G_SOURCE_REMOVE;
-}
-
-static gpointer
-update_enroll_status_label (gpointer data)
-{
-  LabelTextData *label_text_data = (LabelTextData *) data;
-  GtkWidget *label = label_text_data->label;
-  FILE *file;
-  char *line = NULL;
-  size_t len = 0;
-  ssize_t read;
-
-  while (!label_text_data->stop) {
-    while ((file = fopen ("/tmp/.enrollment_status", "r")) == NULL) {
-      if (label_text_data->stop) return NULL;
-      g_usleep (500 * 1000);
-    }
-
-    while ((read = getline (&line, &len, file)) != -1) {
-      if (label_text_data->stop) {
-        fclose (file);
-        return NULL;
-      }
-    }
-
-    if (line != NULL) {
-      LabelTextData *new_label_text_data = g_new (LabelTextData, 1);
-      new_label_text_data->label = label;
-      new_label_text_data->text = g_strdup (line);
-      g_idle_add ((GSourceFunc) set_label_text, new_label_text_data);
-      free (line);
-      line = NULL;
-    }
-
-    fclose (file);
-
-    g_usleep (500 * 1000);
-  }
-
-  return NULL;
 }
 
 static gboolean
 set_identify_label_text (gpointer data)
 {
   LabelTextData *label_text_data = (LabelTextData *) data;
-  gchar *text_chomped = g_strchomp(g_strdup (label_text_data->text));
-  gchar *text_with_percent = g_strconcat (text_chomped, NULL);
+  gchar *text_chomped = g_strchomp (g_strdup (label_text_data->text));
 
-  gtk_widget_set_visible (GTK_WIDGET (label_text_data->label), TRUE);
-  gtk_label_set_text (GTK_LABEL (label_text_data->label), text_with_percent);
+  if (text_chomped) {
+    gtk_widget_set_visible (GTK_WIDGET (label_text_data->label), TRUE);
+    gtk_label_set_text (GTK_LABEL (label_text_data->label), text_chomped);
+    g_free (text_chomped);
+  }
 
-  g_free (text_with_percent);
-  g_free (text_chomped);
   g_free (label_text_data->text);
   g_free (label_text_data);
   return G_SOURCE_REMOVE;
+}
+
+static void
+handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVariant *parameters, gpointer user_data)
+{
+  CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
+  gint progress;
+  gchar *info;
+
+  if (g_strcmp0 (signal_name, "EnrollProgressChanged") == 0) {
+    g_variant_get (parameters, "(i)", &progress);
+
+    LabelTextData *label_text_data = g_new0 (LabelTextData, 1);
+    label_text_data->label = self->enroll_status_label;
+    label_text_data->text = g_strdup_printf ("%d", progress);
+    g_idle_add (set_label_text, label_text_data);
+
+    if (progress == 100) {
+      g_usleep (500 * 1000); // without this it segfaults. why? i don't know!
+      self->enrollment_done = TRUE;
+    }
+  } else if (g_strcmp0 (signal_name, "AcquisitionInfo") == 0 ||
+             g_strcmp0 (signal_name, "ErrorInfo") == 0 ||
+             g_strcmp0 (signal_name, "Identified") == 0 ||
+             g_strcmp0 (signal_name, "StateChanged") == 0) {
+    g_variant_get (parameters, "(s)", &info);
+    g_debug ("%s received: %s", signal_name, info);
+
+    if (g_strcmp0 (signal_name, "StateChanged") == 0 && g_strcmp0 (info, "FPSTATE_IDLE") == 0)
+      g_usleep (500 * 1000); // wait for fpd to update
+
+    if (g_strcmp0 (signal_name, "ErrorInfo") == 0 && g_strcmp0 (info, "ERROR_NO_SPACE") == 0) {
+      self->finger_limit_reached = TRUE;
+      self->enrollment_done = TRUE;
+    }
+
+    if (g_strcmp0 (signal_name, "Identified") == 0) {
+      LabelTextData *label_text_data = g_new0 (LabelTextData, 1);
+      label_text_data->label = self->identify_status_label;
+      label_text_data->text = g_strdup (info);
+      g_idle_add (set_identify_label_text, label_text_data);
+      self->identification_done = TRUE;
+    }
+
+    g_free (info);
+  }
 }
 
 static gpointer
@@ -332,6 +343,9 @@ enroll_finger_thread (gpointer user_data)
 {
   CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
   gchar *finger = gtk_combo_box_text_get_active_text (self->finger_select_combo);
+  GDBusProxy *proxy;
+  GError *error = NULL;
+  GVariant *result;
 
   gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_combo), FALSE);
@@ -339,25 +353,50 @@ enroll_finger_thread (gpointer user_data)
   gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), FALSE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
 
-  LabelTextData *label_text_data = g_new0 (LabelTextData, 1);
-  label_text_data->label = self->enroll_status_label;
-  label_text_data->stop = FALSE;
-  GThread *thread = g_thread_new ("update_label_thread", update_enroll_status_label, label_text_data);
+  proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    "org.droidian.fingerprint",
+    "/org/droidian/fingerprint",
+    "org.droidian.fingerprint",
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  g_signal_connect (proxy, "g-signal", G_CALLBACK (handle_signal), self);
 
   if (finger != NULL) {
-    gchar *command = g_strdup_printf ("(rm -f /tmp/.enrollment_status; droidian-fpd-client enroll %s > /tmp/.enrollment_status 2>&1; echo 100 >> /tmp/.enrollment_status; systemctl restart --user fpdlistener)", finger);
-    system (command);
-    g_free (command);
+    result = g_dbus_proxy_call_sync(
+      proxy,
+      "Enroll",
+      g_variant_new ("(s)", finger),
+      G_DBUS_CALL_FLAGS_NONE,
+      -1,
+      NULL,
+      &error
+    );
+
+    if (error) {
+      g_warning ("Error calling Enroll: %s\n", error->message);
+      g_clear_error (&error);
+      g_object_unref (proxy);
+      g_free (finger);
+      return NULL;
+    }
+
+    g_variant_unref (result);
     g_free (finger);
   }
 
-  label_text_data->stop = TRUE;
-  g_thread_join (thread);
-  g_free (label_text_data);
-
-  gtk_label_set_text (GTK_LABEL (self->enroll_status_label), "100%");
-
-  refresh_unenrolled_list (self);
+  while (!self->enrollment_done)
+    g_usleep (500 * 100);
 
   gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_combo), TRUE);
@@ -365,52 +404,82 @@ enroll_finger_thread (gpointer user_data)
   gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), TRUE);
 
+  if (self->finger_limit_reached) {
+    g_usleep (500 * 100);
+    gtk_label_set_text (GTK_LABEL (self->enroll_status_label), "");
+  }
+
+  // this won't update if we refresh too early as fpd database has not been updated yet
+  g_usleep (500 * 100);
+  refresh_unenrolled_list (self);
+
+  g_object_unref (proxy);
+
   return NULL;
 }
 
 static void
 cc_fingerprint_panel_enroll_finger (GtkButton *button, CcFingerprintPanel *self)
 {
+  self->enrollment_done = FALSE;
+  self->finger_limit_reached = FALSE;
   g_thread_new (NULL, enroll_finger_thread, self);
-}
-
-static gboolean
-enable_identify_button (gpointer user_data)
-{
-  CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
-  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), TRUE);
-  return FALSE;
 }
 
 static gpointer
 identify_finger_thread (gpointer user_data)
 {
   CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
-
-  gchar *command = g_strdup_printf ("droidian-fpd-client identify");
-  gchar *output = NULL;
-  gchar *error_output = NULL;
   GError *error = NULL;
+  GVariant *result;
+  GDBusProxy *proxy;
 
-  if (!g_spawn_command_line_sync (command, &error_output, &output, NULL, &error)) {
-    g_printerr ("Failed to execute command: %s", error->message);
-    g_error_free (error);
-  } else {
-    LabelTextData *label_text_data = g_new (LabelTextData, 1);
-    label_text_data->label = self->identify_status_label;
-    label_text_data->text = g_strdup (output);
-    g_idle_add ((GSourceFunc) set_identify_label_text, label_text_data);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
+
+  proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    "org.droidian.fingerprint",
+    "/org/droidian/fingerprint",
+    "org.droidian.fingerprint",
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
   }
 
-  if (output)
-    g_free (output);
+  g_signal_connect (proxy, "g-signal", G_CALLBACK (handle_signal), self);
 
-  if (error_output)
-    g_free (error_output);
+  result = g_dbus_proxy_call_sync(
+    proxy,
+    "Identify",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
 
-  g_free (command);
+  if (error) {
+    g_warning ("Error calling Identify: %s\n", error->message);
+    g_clear_error (&error);
+    g_object_unref (proxy);
+    return NULL;
+  }
 
-  g_idle_add ((GSourceFunc) enable_identify_button, self);
+  g_variant_unref(result);
+
+  while (!self->identification_done)
+    g_usleep (500 * 100);
+
+  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), TRUE);
+
+  g_object_unref (proxy);
 
   return NULL;
 }
@@ -418,8 +487,54 @@ identify_finger_thread (gpointer user_data)
 static void
 cc_fingerprint_panel_identify_finger (GtkButton *button, CcFingerprintPanel *self)
 {
-  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
+  self->identification_done = FALSE;
   g_thread_new (NULL, identify_finger_thread, self);
+}
+
+static gboolean
+ping_fpd (void)
+{
+  GDBusProxy *proxy;
+  GError *error = NULL;
+  GVariant *result;
+
+  proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    "org.droidian.fingerprint",
+    "/org/droidian/fingerprint",
+    "org.freedesktop.DBus.Peer",
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_warning ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    proxy,
+    "Ping",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  g_object_unref (proxy);
+
+  if (error) {
+    g_warning ("Error calling Ping: %s\n", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  g_variant_unref (result);
+  return TRUE;
 }
 
 static void
@@ -476,9 +591,7 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
   g_resources_register (cc_fingerprint_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  system ("rm -f /tmp/.enrollment_status");
-
-  if (g_file_test ("/usr/bin/droidian-fpd-client", G_FILE_TEST_EXISTS)) {
+  if (ping_fpd ()) {
     g_signal_connect (G_OBJECT (self->remove_finger_button), "clicked", G_CALLBACK (cc_fingerprint_panel_remove_finger), self);
     g_signal_connect (G_OBJECT (self->enroll_finger_button), "clicked", G_CALLBACK (cc_fingerprint_panel_enroll_finger), self);
 
@@ -497,6 +610,8 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_combo), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->show_unenrolled_list), FALSE);
     gtk_label_set_text (GTK_LABEL (self->enroll_status_label), "");
   }
 }

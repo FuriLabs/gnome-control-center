@@ -28,6 +28,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *waydroid_enabled_switch;
   GtkWidget        *waydroid_autostart_switch;
   GtkWidget        *waydroid_shared_folder_switch;
+  GtkWidget        *waydroid_nfc_switch;
   GtkWidget        *waydroid_ip_label;
   GtkWidget        *waydroid_vendor_label;
   GtkWidget        *waydroid_version_label;
@@ -936,6 +937,14 @@ cc_waydroid_factory_reset_threaded (GtkWidget *widget, CcWaydroidPanel *self)
   g_free (home_env);
 }
 
+static void
+cc_waydroid_panel_nfc (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  waydroid_toggle_nfc ();
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), state);
+}
+
 static gboolean
 reenable_switch_and_update_info (gpointer data)
 {
@@ -951,6 +960,7 @@ reenable_switch_and_update_info (gpointer data)
   gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->store_button), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), TRUE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_nfc_switch), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), FALSE);
 
   g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_launch_app_threaded), self);
@@ -961,6 +971,18 @@ reenable_switch_and_update_info (gpointer data)
 
   g_usleep (5000000);
   update_app_list_threaded (self);
+
+  if (waydroid_get_nfc_status ()) {
+    g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
+    g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+  } else {
+    g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
+    g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+  }
 
   return G_SOURCE_REMOVE;
 }
@@ -1022,6 +1044,7 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
     gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->store_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_nfc_switch), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), TRUE);
   }
 
@@ -1081,6 +1104,10 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
+                                        waydroid_nfc_switch);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcWaydroidPanel,
                                         waydroid_ip_label);
 
   gtk_widget_class_bind_template_child (widget_class,
@@ -1132,6 +1159,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
     g_signal_connect (G_OBJECT (self->waydroid_enabled_switch), "state-set", G_CALLBACK (cc_waydroid_panel_enable_waydroid), self);
     g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
     g_signal_connect (G_OBJECT (self->waydroid_shared_folder_switch), "state-set", G_CALLBACK (cc_waydroid_panel_shared_folder), self);
+    g_signal_connect (G_OBJECT (self->waydroid_nfc_switch), "state-set", G_CALLBACK (cc_waydroid_panel_nfc), self);
     g_signal_connect (G_OBJECT (self->waydroid_factory_reset), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
 
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
@@ -1151,7 +1179,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
     gchar *current_state = waydroid_get_state ();
 
-    if (current_state != NULL && g_strcmp0(current_state, "RUNNING") == 0) {
+    if (current_state != NULL && g_strcmp0 (current_state, "RUNNING") == 0) {
       g_signal_handlers_block_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
@@ -1181,6 +1209,18 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
       g_free (android_dir_path);
 
+      if (waydroid_get_nfc_status ()) {
+        g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+        gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
+        gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
+        g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+      } else {
+        g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+        gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
+        gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
+        g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+      }
+
       update_waydroid_ip_threaded (self);
       update_waydroid_vendor_threaded (self);
       update_app_list_threaded (self);
@@ -1192,6 +1232,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       g_signal_handlers_unblock_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
       gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), "");
       gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
+      gtk_widget_set_sensitive (self->waydroid_nfc_switch, FALSE);
       gtk_widget_set_sensitive (GTK_WIDGET (self->launch_app_button), FALSE);
       gtk_widget_set_sensitive (GTK_WIDGET (self->remove_app_button), FALSE);
       gtk_widget_set_sensitive (GTK_WIDGET (self->install_app_button), FALSE);
@@ -1207,6 +1248,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
     gtk_widget_set_sensitive (self->waydroid_enabled_switch, FALSE);
     gtk_widget_set_sensitive (self->waydroid_autostart_switch, FALSE);
     gtk_widget_set_sensitive (self->waydroid_shared_folder_switch, FALSE);
+    gtk_widget_set_sensitive (self->waydroid_nfc_switch, FALSE);
     gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), "");
     gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), "");
     gtk_widget_set_sensitive (GTK_WIDGET (self->launch_app_button), FALSE);

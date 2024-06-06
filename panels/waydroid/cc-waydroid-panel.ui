@@ -74,6 +74,22 @@
 
                         <child>
                           <object class="AdwActionRow">
+                            <property name="title" translatable="yes">NFC Access</property>
+                            <property name="subtitle" translatable="yes">Allow access to NFC inside the container</property>
+                            <property name="use-underline">true</property>
+                            <child>
+                              <object class="GtkSwitch" id="waydroid_nfc_switch">
+                                <property name="valign">center</property>
+                                <accessibility>
+                                  <property name="label" translatable="yes">Enabled</property>
+                                </accessibility>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+
+                        <child>
+                          <object class="AdwActionRow">
                             <property name="title" translatable="yes">Android IP</property>
                             <property name="subtitle" translatable="yes">IP Address of Android</property>
                             <property name="activatable">false</property>

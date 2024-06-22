@@ -35,13 +35,25 @@ cc_usb_panel_finalize (GObject *object)
 static void
 cc_usb_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcUsbPanel *self)
 {
+  const gchar *home_dir = g_get_home_dir ();
+  gchar *filepath = g_strdup_printf ("%s/.mtp_disable", home_dir);
+
   if (state) {
-    system ("rm -f ~/.mtp_disable");
+    if (unlink (filepath) != 0)
+        g_printerr ("Error deleting ~/.mtp_disable");
+
     system ("systemctl --user start mtp-server");
   } else {
-    system ("touch ~/.mtp_disable");
+    FILE *file = fopen (filepath, "w");
+    if (file != NULL)
+        fclose (file);
+    else
+        g_printerr ("Error creating ~/.mtp_disable");
+
     system ("systemctl --user stop mtp-server");
   }
+
+  g_free (filepath);
 
   gtk_switch_set_state (GTK_SWITCH (self->mtp_enabled_switch), state);
   gtk_switch_set_active (GTK_SWITCH (self->mtp_enabled_switch), state);
@@ -96,9 +108,8 @@ cc_usb_panel_usb_state_changed (GtkComboBox *widget, CcUsbPanel *self)
         if (g_str_has_prefix (lines[i], "USBMODE=")) {
           g_string_append_printf (new_contents, "USBMODE=%s\n", new_mode);
           line_replaced = TRUE;
-        } else {
+        } else
           g_string_append_printf (new_contents, "%s\n", lines[i]);
-        }
       }
 
       if (!line_replaced)
@@ -107,22 +118,20 @@ cc_usb_panel_usb_state_changed (GtkComboBox *widget, CcUsbPanel *self)
       FILE *fp = fopen (config_file_path, "w");
       if (fp) {
         if (fwrite (new_contents->str, sizeof (char), strlen (new_contents->str), fp) < strlen (new_contents->str))
-          g_printerr ("Failed to write to the file.");
+          g_printerr ("Failed to write to the file: %s\n", config_file_path);
         fclose (fp);
-      } else {
-        g_printerr ("Failed to open the file for writing.");
-      }
+      } else
+        g_printerr ("Failed to open the file for writing: %s\n", config_file_path);
 
       g_string_free (new_contents, TRUE);
       g_strfreev (lines);
       g_free (contents);
     } else {
-      g_printerr ("Failed to read the file: %s", error->message);
+      g_printerr ("Failed to read the file: %s, error: %s\n", config_file_path, error->message);
       g_error_free (error);
     }
-  } else {
-    g_printerr ("Either no new mode specified or config file does not exist.");
-  }
+  } else
+    g_printerr ("Either no new mode specified or config file does not exist: %s\n", config_file_path);
 }
 
 static void
@@ -240,9 +249,7 @@ cc_usb_panel_init (CcUsbPanel *self)
       g_signal_connect (G_OBJECT (self->help_button), "clicked", G_CALLBACK (cc_usb_panel_help_button_clicked), self);
 
       gchar *mtp_output;
-      gchar *mtp_error;
-      gint mtp_exit_status;
-      g_spawn_command_line_sync("systemctl --user is-active mtp-server", &mtp_output, &mtp_error, &mtp_exit_status, NULL);
+      g_spawn_command_line_sync ("systemctl --user is-active mtp-server", &mtp_output, NULL, NULL, NULL);
 
       if (g_str_has_prefix (mtp_output, "active")) {
         g_signal_handlers_block_by_func (self->mtp_enabled_switch, cc_usb_panel_enable_mtp, self);
@@ -257,10 +264,8 @@ cc_usb_panel_init (CcUsbPanel *self)
       }
 
       g_free (mtp_output);
-      g_free (mtp_error);
-    } else {
+    } else
       gtk_widget_set_sensitive (GTK_WIDGET (self->mtp_enabled_switch), FALSE);
-    }
 
     gchar *config_contents;
     if (g_file_get_contents (config_file_path, &config_contents, NULL, NULL)) {
@@ -310,9 +315,8 @@ cc_usb_panel_init (CcUsbPanel *self)
         }
       }
     }
-  } else {
+  } else
     gtk_widget_set_sensitive (GTK_WIDGET (self->iso_selection_switch), FALSE);
-  }
 }
 
 CcUsbPanel *

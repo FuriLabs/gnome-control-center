@@ -13,6 +13,10 @@
 #include <gio/gdesktopappinfo.h>
 #include <glib/gi18n.h>
 
+#define USBCONFIG_DBUS_NAME          "io.FuriOS.USBConfig"
+#define USBCONFIG_DBUS_PATH          "/io/FuriOS/USBConfig"
+#define USBCONFIG_DBUS_INTERFACE     "io.FuriOS.USBConfig"
+
 struct _CcUsbPanel {
   CcPanel            parent;
   GtkWidget        *mtp_enabled_switch;
@@ -59,17 +63,6 @@ cc_usb_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcUsbPanel *self)
   gtk_switch_set_active (GTK_SWITCH (self->mtp_enabled_switch), state);
 }
 
-static gchar *
-get_config_file_path ()
-{
-  if (g_file_test ("/usr/lib/droidian/device/mtp-configfs.conf", G_FILE_TEST_EXISTS))
-    return "/usr/lib/droidian/device/mtp-configfs.conf";
-  else if (g_file_test ("/etc/mtp-configfs.conf", G_FILE_TEST_EXISTS))
-    return "/etc/mtp-configfs.conf";
-
-  return NULL;
-}
-
 static void
 cc_usb_panel_help_button_clicked (GtkButton *button, CcUsbPanel *self)
 {
@@ -91,47 +84,49 @@ cc_usb_panel_help_button_clicked (GtkButton *button, CcUsbPanel *self)
 }
 
 static void
+usb_set_mode (const char *mode)
+{
+  GDBusProxy *usbconfig_proxy;
+  GError *error = NULL;
+
+  usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    USBCONFIG_DBUS_NAME,
+    USBCONFIG_DBUS_PATH,
+    USBCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call(
+    usbconfig_proxy,
+    "SetUSBMode",
+    g_variant_new("(s)", mode),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    NULL,
+    NULL
+  );
+
+  g_object_unref (usbconfig_proxy);
+}
+
+static void
 cc_usb_panel_usb_state_changed (GtkComboBox *widget, CcUsbPanel *self)
 {
-  const gchar *new_mode = gtk_combo_box_get_active_id (widget);
-  GError *error = NULL;
-  gchar *config_file_path = get_config_file_path ();
+  const gchar *selected_mode = gtk_combo_box_get_active_id (GTK_COMBO_BOX (self->usb_state_dropdown));
 
-  if (new_mode && config_file_path) {
-    gchar *contents;
-    if (g_file_get_contents (config_file_path, &contents, NULL, &error)) {
-      gchar **lines = g_strsplit (contents, "\n", -1);
-      GString *new_contents = g_string_new ("");
-      gboolean line_replaced = FALSE;
-
-      for (gint i = 0; lines[i] != NULL; i++) {
-        if (g_str_has_prefix (lines[i], "USBMODE=")) {
-          g_string_append_printf (new_contents, "USBMODE=%s\n", new_mode);
-          line_replaced = TRUE;
-        } else
-          g_string_append_printf (new_contents, "%s\n", lines[i]);
-      }
-
-      if (!line_replaced)
-        g_string_append_printf (new_contents, "USBMODE=%s\n", new_mode);
-
-      FILE *fp = fopen (config_file_path, "w");
-      if (fp) {
-        if (fwrite (new_contents->str, sizeof (char), strlen (new_contents->str), fp) < strlen (new_contents->str))
-          g_printerr ("Failed to write to the file: %s\n", config_file_path);
-        fclose (fp);
-      } else
-        g_printerr ("Failed to open the file for writing: %s\n", config_file_path);
-
-      g_string_free (new_contents, TRUE);
-      g_strfreev (lines);
-      g_free (contents);
-    } else {
-      g_printerr ("Failed to read the file: %s, error: %s\n", config_file_path, error->message);
-      g_error_free (error);
-    }
-  } else
-    g_printerr ("Either no new mode specified or config file does not exist: %s\n", config_file_path);
+  g_debug ("Selected USB state: %s", selected_mode);
+  usb_set_mode (selected_mode);
 }
 
 static void
@@ -171,6 +166,60 @@ on_file_chosen (GtkFileChooserNative *native, gint response_id, CcUsbPanel *self
   }
 
   gtk_native_dialog_destroy (GTK_NATIVE_DIALOG (native));
+}
+
+static char*
+usb_get_current_state (void)
+{
+  GDBusProxy *usbconfig_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  char *current_state = NULL;
+
+  usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    USBCONFIG_DBUS_NAME,
+    USBCONFIG_DBUS_PATH,
+    USBCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    usbconfig_proxy,
+    "org.freedesktop.DBus.Properties.Get",
+    g_variant_new ("(ss)", USBCONFIG_DBUS_INTERFACE, "CurrentState"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling method: %s\n", error->message);
+    g_clear_error (&error);
+    g_object_unref (usbconfig_proxy);
+    return NULL;
+  }
+
+  if (result) {
+    GVariant *state_variant;
+    g_variant_get (result, "(v)", &state_variant);
+    current_state = g_strdup (g_variant_get_string (state_variant, NULL));
+    g_variant_unref (state_variant);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (usbconfig_proxy);
+  return current_state;
 }
 
 static void
@@ -235,17 +284,15 @@ cc_usb_panel_init (CcUsbPanel *self)
   g_resources_register (cc_usb_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  gchar *config_file_path = get_config_file_path ();
   gboolean mtp_supported = g_file_test ("/usr/lib/droidian/device/mtp-supported", G_FILE_TEST_EXISTS);
 
-  if (!mtp_supported || !config_file_path) {
+  if (!mtp_supported) {
     gtk_widget_set_sensitive (GTK_WIDGET (self->mtp_enabled_switch), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_dropdown), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->help_button), FALSE);
   } else {
     if (g_file_test ("/usr/bin/mtp-server", G_FILE_TEST_EXISTS)) {
       g_signal_connect (G_OBJECT (self->mtp_enabled_switch), "state-set", G_CALLBACK (cc_usb_panel_enable_mtp), self);
-      g_signal_connect (G_OBJECT (self->usb_state_dropdown), "changed", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
       g_signal_connect (G_OBJECT (self->help_button), "clicked", G_CALLBACK (cc_usb_panel_help_button_clicked), self);
 
       gchar *mtp_output;
@@ -266,24 +313,18 @@ cc_usb_panel_init (CcUsbPanel *self)
       g_free (mtp_output);
     } else
       gtk_widget_set_sensitive (GTK_WIDGET (self->mtp_enabled_switch), FALSE);
+  }
 
-    gchar *config_contents;
-    if (g_file_get_contents (config_file_path, &config_contents, NULL, NULL)) {
-      gchar **lines = g_strsplit(config_contents, "\n", -1);
-      for (gint i = 0; lines[i] != NULL; i++) {
-        if (g_str_has_prefix (lines[i], "USBMODE=")) {
-          gchar **tokens = g_strsplit (lines[i], "=", 2);
-          if (tokens[1] != NULL)
-            gtk_combo_box_set_active_id (GTK_COMBO_BOX (self->usb_state_dropdown), tokens[1]);
-
-          g_strfreev (tokens);
-          break;
-        }
-      }
-
-      g_strfreev (lines);
-      g_free (config_contents);
-    }
+  char *current_state = usb_get_current_state ();
+  if (current_state) {
+    g_signal_connect (G_OBJECT (self->usb_state_dropdown), "changed", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
+    g_signal_handlers_block_by_func (self->usb_state_dropdown, cc_usb_panel_usb_state_changed, self);
+    gtk_combo_box_set_active_id (GTK_COMBO_BOX (self->usb_state_dropdown), current_state);
+    g_signal_handlers_unblock_by_func (self->usb_state_dropdown, cc_usb_panel_usb_state_changed, self);
+    g_free (current_state);
+  } else {
+    g_debug ("Failed to get CurrentState from USBConfig, marking as unavailable");
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_dropdown), FALSE);
   }
 
   gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), FALSE);

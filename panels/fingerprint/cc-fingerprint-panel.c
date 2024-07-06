@@ -16,26 +16,20 @@
 
 struct _CcFingerprintPanel {
   CcPanel            parent;
-  AdwToastOverlay  *toast_overlay;
-  GtkComboBoxText  *finger_select_combo;
-  GtkWidget        *remove_finger_button;
-  GtkWidget        *enroll_finger_button;
-  GtkWidget        *enroll_status_label;
-  GtkWidget        *identify_finger_button;
-  GtkWidget        *identify_status_label;
-  GtkBox           *show_list_box;
-  GtkToggleButton  *show_enrolled_list;
-  GtkToggleButton  *show_unenrolled_list;
-  gboolean         enrollment_done;
-  gboolean         identification_done;
-  gboolean         finger_canceled;
+  AdwToastOverlay   *toast_overlay;
+  GtkImage          *fingerprint_image;
+  GtkProgressBar    *enroll_progress;
+  AdwComboRow       *finger_select_row;
+  GtkButton         *remove_finger_button;
+  GtkButton         *enroll_finger_button;
+  GtkButton         *identify_finger_button;
+  GtkToggleButton   *show_enrolled_list;
+  GtkToggleButton   *show_unenrolled_list;
+  gboolean           enrollment_done;
+  gboolean           identification_done;
+  gboolean           finger_canceled;
+  gboolean           sensitive;
 };
-
-typedef struct {
-    GtkWidget *label;
-    gchar *text;
-    gboolean stop;
-} LabelTextData;
 
 G_DEFINE_TYPE (CcFingerprintPanel, cc_fingerprint_panel, CC_TYPE_PANEL)
 
@@ -62,6 +56,21 @@ show_toast (CcFingerprintPanel *self, const char *format, ...)
   adw_toast_overlay_add_toast (self->toast_overlay, toast);
 
   g_free (message);
+}
+
+// TODO: maybe do this a bit better?
+static gboolean
+set_ui_sensitivity (gpointer user_data)
+{
+  CcFingerprintPanel *self = CC_FINGERPRINT_PANEL (user_data);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), self->sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_row), self->sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), self->sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), self->sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), self->sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->show_unenrolled_list), self->sensitive);
+
+  return G_SOURCE_REMOVE;
 }
 
 static gchar **
@@ -162,35 +171,10 @@ remove_fingerprint (const gchar *finger)
   return TRUE;
 }
 
-void
-refresh_enrolled_list (CcFingerprintPanel *self)
+static void
+refresh_fingerprint_list (CcFingerprintPanel *self)
 {
-  gchar **fpd_fingers = get_enrolled_fingers();
-  if (!fpd_fingers)
-    return;
-
-  g_return_if_fail(self->finger_select_combo != NULL);
-
-  gtk_combo_box_text_remove_all (self->finger_select_combo);
-
-  for (int i = 0; fpd_fingers[i] != NULL; i++) {
-    gchar *trimmed_finger = g_strstrip (fpd_fingers[i]);
-    if (trimmed_finger && *trimmed_finger)
-      gtk_combo_box_text_append_text (self->finger_select_combo, trimmed_finger);
-  }
-
-  if (gtk_combo_box_get_active (GTK_COMBO_BOX (self->finger_select_combo)) == -1)
-    gtk_combo_box_set_active (GTK_COMBO_BOX (self->finger_select_combo), 0);
-
-  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), gtk_combo_box_get_active (GTK_COMBO_BOX (self->finger_select_combo)) != -1);
-
-  g_strfreev (fpd_fingers);
-}
-
-void
-refresh_unenrolled_list (CcFingerprintPanel *self)
-{
-  gchar *fingers[] = {
+  gchar *all_fingers[] = {
     "right-index-finger",
     "left-index-finger",
     "right-thumb",
@@ -204,99 +188,125 @@ refresh_unenrolled_list (CcFingerprintPanel *self)
     NULL
   };
 
-  gchar **fpd_fingers = get_enrolled_fingers ();
-  if (!fpd_fingers)
-    return;
+  gchar **enrolled_fingers = get_enrolled_fingers ();
+  GtkStringList *string_list = gtk_string_list_new (NULL);
 
-  gtk_combo_box_text_remove_all (self->finger_select_combo);
+  gboolean show_enrolled = gtk_toggle_button_get_active (self->show_enrolled_list);
 
-  for (int i = 0; fingers[i] != NULL; i++) {
-    if (!g_strv_contains ((const gchar *const *) fpd_fingers, fingers[i]))
-      gtk_combo_box_text_append_text (self->finger_select_combo, fingers[i]);
+  gboolean has_items = FALSE;
+  for (int i = 0; all_fingers[i] != NULL; i++) {
+    gboolean is_enrolled = g_strv_contains ((const gchar *const *) enrolled_fingers, all_fingers[i]);
+    if ((show_enrolled && is_enrolled) || (!show_enrolled && !is_enrolled)) {
+      gtk_string_list_append (string_list, all_fingers[i]);
+      has_items = TRUE;
+    }
   }
 
-  if (gtk_combo_box_get_active (GTK_COMBO_BOX (self->finger_select_combo)) == -1)
-    gtk_combo_box_set_active (GTK_COMBO_BOX (self->finger_select_combo), 0);
+  adw_combo_row_set_model (self->finger_select_row, NULL);
 
-  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), gtk_combo_box_get_active (GTK_COMBO_BOX (self->finger_select_combo)) != -1);
+  if (has_items) {
+    adw_combo_row_set_model (self->finger_select_row, G_LIST_MODEL (string_list));
+    adw_combo_row_set_selected (self->finger_select_row, 0);
+  } else {
+    adw_combo_row_set_model (self->finger_select_row, G_LIST_MODEL (string_list));
+    adw_combo_row_set_selected (self->finger_select_row, GTK_INVALID_LIST_POSITION);
+  }
 
-  g_strfreev (fpd_fingers);
-}
+  gboolean has_enrolled_fingers = (enrolled_fingers != NULL && enrolled_fingers[0] != NULL);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), show_enrolled && has_items);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), !show_enrolled && has_items);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), has_enrolled_fingers);
 
-gboolean
-on_show_enrolled_list_toggled (GtkToggleButton *togglebutton, gpointer user_data)
-{
-  CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
-
-  refresh_enrolled_list (self);
-  gtk_toggle_button_set_active (self->show_unenrolled_list, FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), TRUE);
-
-  return TRUE;
-}
-
-gboolean
-on_show_unenrolled_list_toggled (GtkToggleButton *togglebutton, gpointer user_data)
-{
-  CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
-
-  refresh_unenrolled_list (self);
-  gtk_toggle_button_set_active (self->show_enrolled_list, FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), TRUE);
-
-  return TRUE;
+  g_strfreev (enrolled_fingers);
 }
 
 static void
-on_finger_select_changed (GtkComboBox *widget, CcFingerprintPanel *self)
+on_show_enrolled_list_toggled (GtkToggleButton *togglebutton, CcFingerprintPanel *self)
 {
-  gboolean has_selection = gtk_combo_box_get_active (widget) != -1;
-  if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->show_enrolled_list))) {
-    gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), has_selection);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
-  } else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (self->show_unenrolled_list))) {
-    gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), has_selection);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), FALSE);
+  gtk_toggle_button_set_active (self->show_unenrolled_list, !gtk_toggle_button_get_active (togglebutton));
+  refresh_fingerprint_list (self);
+}
+
+static void
+on_show_unenrolled_list_toggled (GtkToggleButton *togglebutton, CcFingerprintPanel *self)
+{
+  gtk_toggle_button_set_active (self->show_enrolled_list, !gtk_toggle_button_get_active (togglebutton));
+  refresh_fingerprint_list (self);
+}
+
+static gchar *
+get_finger_at_index (CcFingerprintPanel *self, guint index)
+{
+  GListModel *model = adw_combo_row_get_model (self->finger_select_row);
+  if (!model) {
+    g_warning ("No model found for finger_select_row");
+    return NULL;
   }
+
+  GtkStringObject *string_object = g_list_model_get_item (model, index);
+  if (!string_object) {
+    g_warning ("No item found at index %u", index);
+    return NULL;
+  }
+
+  const gchar *str = gtk_string_object_get_string (string_object);
+  if (!str) {
+    g_warning ("Empty string found at index %u", index);
+    g_object_unref (string_object);
+    return NULL;
+  }
+
+  gchar *result = g_strdup (str);
+  g_object_unref (string_object);
+  return result;
+}
+
+static void
+on_finger_select_changed (AdwComboRow *combo_row, GParamSpec *pspec, CcFingerprintPanel *self)
+{
+  guint selected_index = adw_combo_row_get_selected (self->finger_select_row);
+
+  if (selected_index == GTK_INVALID_LIST_POSITION) {
+    gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
+    return;
+  }
+
+  gchar *selected_finger = get_finger_at_index (self, selected_index);
+  if (selected_finger == NULL) {
+    gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
+    g_free(selected_finger);
+    return;
+  }
+
+  gchar **enrolled_fingers = get_enrolled_fingers ();
+  gboolean is_enrolled = g_strv_contains ((const gchar *const *) enrolled_fingers, selected_finger);
+
+  gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), is_enrolled);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), !is_enrolled);
+
+  g_free (selected_finger);
+  g_strfreev (enrolled_fingers);
 }
 
 static void
 cc_fingerprint_panel_remove_finger (GtkButton *button, CcFingerprintPanel *self)
 {
-  gchar *selected_finger = gtk_combo_box_text_get_active_text (self->finger_select_combo);
+  guint selected_index = adw_combo_row_get_selected (self->finger_select_row);
+  gchar *selected_finger = get_finger_at_index (self, selected_index);
   if (selected_finger) {
     if (remove_fingerprint (selected_finger)) {
       g_debug ("Successfully removed fingerprint: %s", selected_finger);
-      show_toast (self, "Successfully removed fingerprint: %s", selected_finger);
-      refresh_enrolled_list (self);
+      show_toast (self, "Successfully removed fingerprint");
+      refresh_fingerprint_list (self);
     } else {
       g_warning ("Failed to remove fingerprint: %s", selected_finger);
-      show_toast (self, "Failed to remove fingerprint: %s", selected_finger);
+      show_toast (self, "Failed to remove fingerprint");
     }
 
     g_free (selected_finger);
   }
-}
-
-static gboolean
-set_label_text (gpointer data)
-{
-  LabelTextData *label_text_data = (LabelTextData *) data;
-  gchar *text_chomped = g_strchomp (g_strdup (label_text_data->text));
-  gchar *text_with_percent = g_strconcat (text_chomped, "%", NULL);
-
-  if (text_with_percent) {
-    gtk_widget_set_visible (GTK_WIDGET (label_text_data->label), TRUE);
-    gtk_label_set_text (GTK_LABEL (label_text_data->label), text_with_percent);
-    g_free (text_with_percent);
-  }
-
-  g_free (text_chomped);
-  g_free (label_text_data->text);
-  g_free (label_text_data);
-  return G_SOURCE_REMOVE;
 }
 
 static void
@@ -309,14 +319,14 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
   if (g_strcmp0 (signal_name, "EnrollProgressChanged") == 0) {
     g_variant_get (parameters, "(i)", &progress);
 
-    LabelTextData *label_text_data = g_new0 (LabelTextData, 1);
-    label_text_data->label = self->enroll_status_label;
-    label_text_data->text = g_strdup_printf ("%d", progress);
-    g_idle_add (set_label_text, label_text_data);
+    gtk_widget_set_visible (GTK_WIDGET (self->enroll_progress), TRUE);
+    gtk_progress_bar_set_fraction (self->enroll_progress, progress / 100.0);
 
+    g_debug ("Enrollment percentage: %d", progress);
     if (progress == 100) {
-      g_usleep (500 * 1000); // without this it segfaults. why? i don't know!
+      g_usleep (500 * 1000);
       self->enrollment_done = TRUE;
+      gtk_widget_set_visible (GTK_WIDGET (self->enroll_progress), FALSE);
     }
   } else if (g_strcmp0 (signal_name, "Identified") == 0) {
     g_variant_get (parameters, "(s)", &info);
@@ -341,6 +351,8 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
       show_toast (self, "Fingerprint operation timed out");
     else if (g_strcmp0 (info, "ERROR_CANCELED") == 0)
       show_toast (self, "Fingerprint operation was canceled");
+    else if (g_strcmp0 (info, "ERROR_UNABLE_TO_REMOVE") == 0)
+      show_toast (self, "Unable to remove the fingerprint");
     else if (g_strcmp0 (info, "FINGER_NOT_RECOGNIZED") == 0)
       show_toast (self, "Fingerprint is not recognized");
     else
@@ -356,16 +368,11 @@ static gpointer
 enroll_finger_thread (gpointer user_data)
 {
   CcFingerprintPanel *self = (CcFingerprintPanel *) user_data;
-  gchar *finger = gtk_combo_box_text_get_active_text (self->finger_select_combo);
   GDBusProxy *proxy;
   GError *error = NULL;
   GVariant *result;
-
-  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_combo), FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->show_unenrolled_list), FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), FALSE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
+  guint selected_index = adw_combo_row_get_selected (self->finger_select_row);
+  gchar *finger = get_finger_at_index (self, selected_index);
 
   proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
@@ -384,6 +391,7 @@ enroll_finger_thread (gpointer user_data)
     return NULL;
   }
 
+  g_debug ("Enrolling %s", finger);
   g_signal_connect (proxy, "g-signal", G_CALLBACK (handle_signal), self);
 
   if (finger != NULL) {
@@ -409,23 +417,23 @@ enroll_finger_thread (gpointer user_data)
     g_free (finger);
   }
 
+  self->sensitive = FALSE;
+  g_idle_add (set_ui_sensitivity, self);
+
   while (!self->enrollment_done)
     g_usleep (500 * 100);
 
-  gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), TRUE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_combo), TRUE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->show_unenrolled_list), TRUE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), TRUE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), TRUE);
+  self->sensitive = TRUE;
+  g_idle_add (set_ui_sensitivity, self);
 
   if (self->finger_canceled) {
     g_usleep (500 * 100);
-    gtk_label_set_text (GTK_LABEL (self->enroll_status_label), "");
+    gtk_widget_set_visible (GTK_WIDGET (self->enroll_progress), FALSE);
   }
 
   // this won't update if we refresh too early as fpd database has not been updated yet
   g_usleep (500 * 100);
-  refresh_unenrolled_list (self);
+  refresh_fingerprint_list (self);
 
   g_object_unref (proxy);
 
@@ -447,8 +455,6 @@ identify_finger_thread (gpointer user_data)
   GError *error = NULL;
   GVariant *result;
   GDBusProxy *proxy;
-
-  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
 
   proxy = g_dbus_proxy_new_for_bus_sync(
     G_BUS_TYPE_SYSTEM,
@@ -488,10 +494,15 @@ identify_finger_thread (gpointer user_data)
 
   g_variant_unref(result);
 
+
+  self->sensitive = FALSE;
+  g_idle_add (set_ui_sensitivity, self);
+
   while (!self->identification_done)
     g_usleep (500 * 100);
 
-  gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), TRUE);
+  self->sensitive = TRUE;
+  g_idle_add (set_ui_sensitivity, self);
 
   g_object_unref (proxy);
 
@@ -551,6 +562,24 @@ ping_fpd (void)
   return TRUE;
 }
 
+// TODO: get rid of these
+static gboolean
+refresh_fingerprint_list_thread (gpointer data)
+{
+  CcFingerprintPanel *self = CC_FINGERPRINT_PANEL (data);
+  refresh_fingerprint_list (self);
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer
+queue_refresh_fingerprint_list_task (gpointer data)
+{
+  CcFingerprintPanel *self = CC_FINGERPRINT_PANEL (data);
+  g_usleep (100000);
+  g_idle_add (refresh_fingerprint_list_thread, self);
+  return NULL;
+}
+
 static void
 cc_fingerprint_panel_class_init (CcFingerprintPanelClass *klass)
 {
@@ -568,15 +597,11 @@ cc_fingerprint_panel_class_init (CcFingerprintPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcFingerprintPanel,
-                                        show_list_box);
+                                        enroll_progress);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcFingerprintPanel,
-                                        show_unenrolled_list);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcFingerprintPanel,
-                                        show_enrolled_list);
+                                        finger_select_row);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcFingerprintPanel,
@@ -588,15 +613,15 @@ cc_fingerprint_panel_class_init (CcFingerprintPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcFingerprintPanel,
-                                        enroll_status_label);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcFingerprintPanel,
-                                        finger_select_combo);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcFingerprintPanel,
                                         identify_finger_button);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcFingerprintPanel,
+                                        show_enrolled_list);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcFingerprintPanel,
+                                        show_unenrolled_list);
 }
 
 static void
@@ -608,25 +633,22 @@ cc_fingerprint_panel_init (CcFingerprintPanel *self)
   if (ping_fpd ()) {
     g_signal_connect (G_OBJECT (self->remove_finger_button), "clicked", G_CALLBACK (cc_fingerprint_panel_remove_finger), self);
     g_signal_connect (G_OBJECT (self->enroll_finger_button), "clicked", G_CALLBACK (cc_fingerprint_panel_enroll_finger), self);
-
-    gtk_widget_set_direction (GTK_WIDGET (self->show_list_box), GTK_TEXT_DIR_LTR);
-    gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->show_enrolled_list), TRUE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
-
-    g_signal_connect (GTK_TOGGLE_BUTTON (self->show_enrolled_list), "toggled", G_CALLBACK (on_show_enrolled_list_toggled), self);
-    g_signal_connect (GTK_TOGGLE_BUTTON (self->show_unenrolled_list), "toggled", G_CALLBACK (on_show_unenrolled_list_toggled), self);
     g_signal_connect (G_OBJECT (self->identify_finger_button), "clicked", G_CALLBACK (cc_fingerprint_panel_identify_finger), self);
-    g_signal_connect (GTK_COMBO_BOX (self->finger_select_combo), "changed", G_CALLBACK (on_finger_select_changed), self);
+    g_signal_connect (self->finger_select_row, "notify::selected", G_CALLBACK (on_finger_select_changed), self);
+    g_signal_connect (self->show_enrolled_list, "toggled", G_CALLBACK (on_show_enrolled_list_toggled), self);
+    g_signal_connect (self->show_unenrolled_list, "toggled", G_CALLBACK (on_show_unenrolled_list_toggled), self);
 
-    refresh_enrolled_list (self);
+    gtk_toggle_button_set_active (self->show_enrolled_list, TRUE);
+
+    GThread *thread = g_thread_new ("refresh-fingerprint-list", queue_refresh_fingerprint_list_task, self);
+    g_thread_unref (thread);
   } else {
+    gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_row), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->remove_finger_button), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->finger_select_combo), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->enroll_finger_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->show_unenrolled_list), FALSE);
-    gtk_label_set_text (GTK_LABEL (self->enroll_status_label), "");
   }
 }
 

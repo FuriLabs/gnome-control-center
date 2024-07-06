@@ -11,129 +11,105 @@
               <object class="AdwHeaderBar"></object>
             </child>
             <property name="content">
-              <object class="AdwClamp">
+              <object class="GtkBox">
+                <property name="orientation">vertical</property>
+                <property name="spacing">24</property>
+                <property name="margin-top">24</property>
+                <property name="margin-bottom">24</property>
+                <property name="margin-start">24</property>
+                <property name="margin-end">24</property>
                 <child>
-                  <object class="GtkScrolledWindow">
+                  <object class="GtkOverlay" id="fingerprint_overlay">
+                    <property name="halign">center</property>
                     <child>
-                      <object class="AdwPreferencesPage">
+                      <object class="GtkImage" id="fingerprint_image">
+                        <property name="pixel-size">340</property>
+                        <property name="icon-name">fingerprint-detection-symbolic</property>
+                      </object>
+                    </child>
+                    <child type="overlay">
+                      <object class="GtkProgressBar" id="enroll_progress">
+                        <property name="visible">false</property>
+                        <property name="valign">end</property>
+                        <style>
+                          <class name="osd"/>
+                        </style>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwPreferencesGroup">
+                    <child>
+                      <object class="AdwComboRow" id="finger_select_row">
+                        <property name="title" translatable="yes">Select Finger</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title" translatable="yes">Manage Fingers</property>
                         <child>
-                          <object class="AdwPreferencesGroup">
-                            <property name="title" translatable="yes">Fingerprint Settings</property>
-
+                          <object class="GtkBox">
+                            <property name="spacing">12</property>
                             <child>
-                              <object class="AdwActionRow" id="show_list_row">
-                                <property name="title" translatable="yes">Finger list</property>
-                                <property name="subtitle" translatable="yes">List of fingers to show</property>
-                                <property name="subtitle-lines">0</property>
-                                <child>
-                                  <object class="GtkBox" id="show_list_box">
-                                    <property name="valign">center</property>
-                                    <property name="homogeneous">True</property>
-                                    <property name="margin_top">12</property>
-                                    <property name="margin_bottom">12</property>
-                                    <style>
-                                      <class name="linked"/>
-                                    </style>
-                                    <child>
-                                      <object class="GtkToggleButton" id="show_enrolled_list">
-                                        <property name="hexpand">True</property>
-                                        <property name="label" translatable="yes">Enrolled</property>
-                                        <property name="height_request">35</property>
-                                      </object>
-                                    </child>
-                                    <child>
-                                      <object class="GtkToggleButton" id="show_unenrolled_list">
-                                        <property name="hexpand">True</property>
-                                        <property name="label" translatable="yes">Unenrolled</property>
-                                        <property name="group">show_enrolled_list</property>
-                                        <property name="height_request">35</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
+                              <object class="GtkButton" id="remove_finger_button">
+                                <property name="label" translatable="yes">Remove</property>
+                                <property name="valign">center</property>
+                                <style>
+                                  <class name="destructive-action"/>
+                                </style>
                               </object>
                             </child>
-
                             <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Select Finger</property>
-                                <property name="subtitle" translatable="yes">Choose a finger</property>
-                                <property name="use-underline">true</property>
-                                <child>
-                                  <object class="GtkComboBoxText" id="finger_select_combo">
-                                    <property name="valign">center</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Finger Select</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
+                              <object class="GtkButton" id="enroll_finger_button">
+                                <property name="label" translatable="yes">Enroll</property>
+                                <property name="valign">center</property>
+                                <style>
+                                  <class name="suggested-action"/>
+                                </style>
                               </object>
                             </child>
-
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Remove Finger</property>
-                                <property name="subtitle" translatable="yes">Remove the selected finger</property>
-                                <property name="use-underline">true</property>
-                                <child>
-                                  <object class="GtkButton" id="remove_finger_button">
-                                    <property name="label" translatable="yes">Remove</property>
-                                    <property name="valign">center</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Remove Finger</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Enroll Finger</property>
-                                <property name="subtitle" translatable="yes">Enroll the selected finger</property>
-                                <child>
-                                  <object class="GtkButton" id="enroll_finger_button">
-                                    <property name="label" translatable="yes">Enroll</property>
-                                    <property name="valign">center</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Enroll Finger</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Enrollment Status</property>
-                                <property name="subtitle" translatable="yes">Finger enrollment progress</property>
-                                <child>
-                                  <object class="GtkLabel" id="enroll_status_label">
-                                    <property name="label" translatable="yes">0</property>
-                                    <property name="visible">false</property>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-
-                            <child>
-                              <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Test finger</property>
-                                <property name="subtitle" translatable="yes">Test the selected finger</property>
-                                <child>
-                                  <object class="GtkButton" id="identify_finger_button">
-                                    <property name="label" translatable="yes">Test</property>
-                                    <property name="valign">center</property>
-                                    <accessibility>
-                                      <property name="label" translatable="yes">Test Finger</property>
-                                    </accessibility>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-
                           </object>
                         </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="AdwActionRow">
+                        <property name="title" translatable="yes">Test Fingerprint</property>
+                        <child>
+                          <object class="GtkButton" id="identify_finger_button">
+                            <property name="label" translatable="yes">Identify</property>
+                            <property name="valign">center</property>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="homogeneous">true</property>
+                    <style>
+                      <class name="linked"/>
+                    </style>
+                    <child>
+                      <object class="GtkToggleButton" id="show_enrolled_list">
+                        <property name="label" translatable="yes">Enrolled</property>
+                        <property name="active">true</property>
+                        <property name="hexpand">true</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkToggleButton" id="show_unenrolled_list">
+                        <property name="label" translatable="yes">Unenrolled</property>
+                        <property name="group">show_enrolled_list</property>
+                        <property name="hexpand">true</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
                       </object>
                     </child>
                   </object>

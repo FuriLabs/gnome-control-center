@@ -342,7 +342,7 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
     g_debug ("%s received: %s", signal_name, info);
 
     if (g_strcmp0 (info, "ERROR_NO_SPACE") == 0)
-      show_toast (self, "No space available for new fingerprint");
+      show_toast (self, "No space available for new fingerprints");
     else if (g_strcmp0 (info, "ERROR_HW_UNAVAILABLE") == 0)
       show_toast (self, "Fingerprint hardware is unavailable");
     else if (g_strcmp0 (info, "ERROR_UNABLE_TO_PROCESS") == 0)
@@ -360,6 +360,21 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
 
     self->finger_canceled = TRUE;
     self->enrollment_done = TRUE;
+    g_free (info);
+  } else if (g_strcmp0 (signal_name, "AcquisitionInfo") == 0) {
+    g_variant_get (parameters, "(s)", &info);
+    g_debug ("%s received: %s", signal_name, info);
+    if (g_strcmp0 (info, "FPACQUIRED_PARTIAL") == 0)
+      show_toast (self, "Partial fingerprint detected. Please try again");
+    else if (g_strcmp0 (info, "FPACQUIRED_IMAGER_DIRTY") == 0)
+      show_toast (self, "The sensor is dirty. Please clean and try again");
+    else if (g_strcmp0 (info, " FPACQUIRED_TOO_FAST") == 0)
+      show_toast (self, "Finger moved too fast. Please try again");
+    else if (g_strcmp0 (info, " FPACQUIRED_TOO_SLOW") == 0)
+      show_toast (self, "Finger moved too slow. Please try again");
+    else if (g_strcmp0 (info, " FPACQUIRED_INSUFFICIENT") == 0)
+      show_toast (self, "Couldn't process fingerprint. Please try again");
+
     g_free (info);
   }
 }

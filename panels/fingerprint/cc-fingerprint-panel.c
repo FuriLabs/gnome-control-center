@@ -9,12 +9,14 @@
 #include "cc-util.h"
 
 #include <adwaita.h>
-#include <gio/gdesktopappinfo.h>
-#include <glib/gi18n.h>
-#include <gdk/gdk.h>
+
+#define FPD_DBUS_NAME         "org.droidian.fingerprint"
+#define FPD_DBUS_PATH         "/org/droidian/fingerprint"
+#define FPD_DBUS_INTERFACE    "org.droidian.fingerprint"
 
 struct _CcFingerprintPanel {
   CcPanel            parent;
+  AdwToastOverlay  *toast_overlay;
   GtkComboBoxText  *finger_select_combo;
   GtkWidget        *remove_finger_button;
   GtkWidget        *enroll_finger_button;
@@ -26,7 +28,7 @@ struct _CcFingerprintPanel {
   GtkToggleButton  *show_unenrolled_list;
   gboolean         enrollment_done;
   gboolean         identification_done;
-  gboolean         finger_limit_reached;
+  gboolean         finger_canceled;
 };
 
 typedef struct {
@@ -43,7 +45,26 @@ cc_fingerprint_panel_finalize (GObject *object)
   G_OBJECT_CLASS (cc_fingerprint_panel_parent_class)->finalize (object);
 }
 
-gchar **
+static void
+show_toast (CcFingerprintPanel *self, const char *format, ...)
+{
+  va_list args;
+  char *message;
+  AdwToast *toast;
+
+  va_start (args, format);
+  message = g_strdup_vprintf (format, args);
+  va_end (args);
+
+  toast = adw_toast_new (message);
+  adw_toast_set_timeout (toast, 3);
+
+  adw_toast_overlay_add_toast (self->toast_overlay, toast);
+
+  g_free (message);
+}
+
+static gchar **
 get_enrolled_fingers (void)
 {
   GDBusProxy *fpd_proxy;
@@ -55,9 +76,9 @@ get_enrolled_fingers (void)
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    "org.droidian.fingerprint",
-    "/org/droidian/fingerprint",
-    "org.droidian.fingerprint",
+    FPD_DBUS_NAME,
+    FPD_DBUS_PATH,
+    FPD_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -95,7 +116,7 @@ get_enrolled_fingers (void)
   return fpd_fingers;
 }
 
-gboolean
+static gboolean
 remove_fingerprint (const gchar *finger)
 {
   GDBusProxy *fpd_proxy;
@@ -106,9 +127,9 @@ remove_fingerprint (const gchar *finger)
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    "org.droidian.fingerprint",
-    "/org/droidian/fingerprint",
-    "org.droidian.fingerprint",
+    FPD_DBUS_NAME,
+    FPD_DBUS_PATH,
+    FPD_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -246,13 +267,16 @@ cc_fingerprint_panel_remove_finger (GtkButton *button, CcFingerprintPanel *self)
 {
   gchar *selected_finger = gtk_combo_box_text_get_active_text (self->finger_select_combo);
   if (selected_finger) {
-    if (remove_fingerprint (selected_finger))
+    if (remove_fingerprint (selected_finger)) {
       g_debug ("Successfully removed fingerprint: %s", selected_finger);
-    else
+      show_toast (self, "Successfully removed fingerprint: %s", selected_finger);
+      refresh_enrolled_list (self);
+    } else {
       g_warning ("Failed to remove fingerprint: %s", selected_finger);
+      show_toast (self, "Failed to remove fingerprint: %s", selected_finger);
+    }
 
     g_free (selected_finger);
-    refresh_enrolled_list (self);
   }
 }
 
@@ -270,23 +294,6 @@ set_label_text (gpointer data)
   }
 
   g_free (text_chomped);
-  g_free (label_text_data->text);
-  g_free (label_text_data);
-  return G_SOURCE_REMOVE;
-}
-
-static gboolean
-set_identify_label_text (gpointer data)
-{
-  LabelTextData *label_text_data = (LabelTextData *) data;
-  gchar *text_chomped = g_strchomp (g_strdup (label_text_data->text));
-
-  if (text_chomped) {
-    gtk_widget_set_visible (GTK_WIDGET (label_text_data->label), TRUE);
-    gtk_label_set_text (GTK_LABEL (label_text_data->label), text_chomped);
-    g_free (text_chomped);
-  }
-
   g_free (label_text_data->text);
   g_free (label_text_data);
   return G_SOURCE_REMOVE;
@@ -311,29 +318,36 @@ handle_signal (GDBusProxy *proxy, gchar *sender_name, gchar *signal_name, GVaria
       g_usleep (500 * 1000); // without this it segfaults. why? i don't know!
       self->enrollment_done = TRUE;
     }
-  } else if (g_strcmp0 (signal_name, "AcquisitionInfo") == 0 ||
-             g_strcmp0 (signal_name, "ErrorInfo") == 0 ||
-             g_strcmp0 (signal_name, "Identified") == 0 ||
-             g_strcmp0 (signal_name, "StateChanged") == 0) {
+  } else if (g_strcmp0 (signal_name, "Identified") == 0) {
+    g_variant_get (parameters, "(s)", &info);
+    g_debug ("%s received: %s", signal_name, info);
+    self->identification_done = TRUE;
+    show_toast (self, "Identified finger: %s", info);
+    g_free (info);
+  } else if (g_strcmp0 (signal_name, "StateChanged") == 0) {
+    if (g_strcmp0 (info, "FPSTATE_IDLE") == 0)
+      g_usleep (500 * 1000); // wait for fpd to update
+  } else if (g_strcmp0 (signal_name, "ErrorInfo") == 0) {
     g_variant_get (parameters, "(s)", &info);
     g_debug ("%s received: %s", signal_name, info);
 
-    if (g_strcmp0 (signal_name, "StateChanged") == 0 && g_strcmp0 (info, "FPSTATE_IDLE") == 0)
-      g_usleep (500 * 1000); // wait for fpd to update
+    if (g_strcmp0 (info, "ERROR_NO_SPACE") == 0)
+      show_toast (self, "No space available for new fingerprint");
+    else if (g_strcmp0 (info, "ERROR_HW_UNAVAILABLE") == 0)
+      show_toast (self, "Fingerprint hardware is unavailable");
+    else if (g_strcmp0 (info, "ERROR_UNABLE_TO_PROCESS") == 0)
+      show_toast (self, "Unable to process fingerprint");
+    else if (g_strcmp0 (info, "ERROR_TIMEOUT") == 0)
+      show_toast (self, "Fingerprint operation timed out");
+    else if (g_strcmp0 (info, "ERROR_CANCELED") == 0)
+      show_toast (self, "Fingerprint operation was canceled");
+    else if (g_strcmp0 (info, "FINGER_NOT_RECOGNIZED") == 0)
+      show_toast (self, "Fingerprint is not recognized");
+    else
+      show_toast (self, "An error occurred with the fingerprint reader");
 
-    if (g_strcmp0 (signal_name, "ErrorInfo") == 0 && g_strcmp0 (info, "ERROR_NO_SPACE") == 0) {
-      self->finger_limit_reached = TRUE;
-      self->enrollment_done = TRUE;
-    }
-
-    if (g_strcmp0 (signal_name, "Identified") == 0) {
-      LabelTextData *label_text_data = g_new0 (LabelTextData, 1);
-      label_text_data->label = self->identify_status_label;
-      label_text_data->text = g_strdup (info);
-      g_idle_add (set_identify_label_text, label_text_data);
-      self->identification_done = TRUE;
-    }
-
+    self->finger_canceled = TRUE;
+    self->enrollment_done = TRUE;
     g_free (info);
   }
 }
@@ -357,9 +371,9 @@ enroll_finger_thread (gpointer user_data)
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    "org.droidian.fingerprint",
-    "/org/droidian/fingerprint",
-    "org.droidian.fingerprint",
+    FPD_DBUS_NAME,
+    FPD_DBUS_PATH,
+    FPD_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -404,7 +418,7 @@ enroll_finger_thread (gpointer user_data)
   gtk_widget_set_sensitive (GTK_WIDGET (self->show_enrolled_list), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->identify_finger_button), TRUE);
 
-  if (self->finger_limit_reached) {
+  if (self->finger_canceled) {
     g_usleep (500 * 100);
     gtk_label_set_text (GTK_LABEL (self->enroll_status_label), "");
   }
@@ -422,7 +436,7 @@ static void
 cc_fingerprint_panel_enroll_finger (GtkButton *button, CcFingerprintPanel *self)
 {
   self->enrollment_done = FALSE;
-  self->finger_limit_reached = FALSE;
+  self->finger_canceled = FALSE;
   g_thread_new (NULL, enroll_finger_thread, self);
 }
 
@@ -440,9 +454,9 @@ identify_finger_thread (gpointer user_data)
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    "org.droidian.fingerprint",
-    "/org/droidian/fingerprint",
-    "org.droidian.fingerprint",
+    FPD_DBUS_NAME,
+    FPD_DBUS_PATH,
+    FPD_DBUS_INTERFACE,
     NULL,
     &error
   );
@@ -502,8 +516,8 @@ ping_fpd (void)
     G_BUS_TYPE_SYSTEM,
     G_DBUS_PROXY_FLAGS_NONE,
     NULL,
-    "org.droidian.fingerprint",
-    "/org/droidian/fingerprint",
+    FPD_DBUS_NAME,
+    FPD_DBUS_PATH,
     "org.freedesktop.DBus.Peer",
     NULL,
     &error
@@ -550,6 +564,10 @@ cc_fingerprint_panel_class_init (CcFingerprintPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcFingerprintPanel,
+                                        toast_overlay);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcFingerprintPanel,
                                         show_list_box);
 
   gtk_widget_class_bind_template_child (widget_class,
@@ -579,10 +597,6 @@ cc_fingerprint_panel_class_init (CcFingerprintPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcFingerprintPanel,
                                         identify_finger_button);
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcFingerprintPanel,
-                                        identify_status_label);
 }
 
 static void

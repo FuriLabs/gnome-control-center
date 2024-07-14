@@ -38,7 +38,7 @@ struct _CcDisplayCustomization {
 
 G_DEFINE_TYPE (CcDisplayCustomization, cc_display_customization, CC_TYPE_PANEL)
 
-void
+static void
 pq_set_feature (const char *method, int mode)
 {
   GDBusProxy *pq_proxy;

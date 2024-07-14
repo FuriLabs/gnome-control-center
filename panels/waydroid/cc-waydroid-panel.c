@@ -59,7 +59,7 @@ cc_waydroid_panel_finalize (GObject *object)
   G_OBJECT_CLASS (cc_waydroid_panel_parent_class)->finalize (object);
 }
 
-gchar *
+static gchar *
 waydroid_get_state (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -126,7 +126,7 @@ waydroid_get_state (void)
   return state;
 }
 
-gboolean
+static gboolean
 waydroid_get_nfc_status (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -174,7 +174,7 @@ waydroid_get_nfc_status (void)
   return nfc_status;
 }
 
-void
+static void
 waydroid_toggle_nfc (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -215,7 +215,7 @@ waydroid_toggle_nfc (void)
   g_object_unref (waydroid_proxy);
 }
 
-gchar *
+static gchar *
 waydroid_get_vendor (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -263,7 +263,7 @@ waydroid_get_vendor (void)
   return vendor;
 }
 
-gchar *
+static gchar *
 waydroid_get_ip (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -311,7 +311,7 @@ waydroid_get_ip (void)
   return ip;
 }
 
-gchar *
+static gchar *
 waydroid_get_version (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -359,7 +359,7 @@ waydroid_get_version (void)
   return version;
 }
 
-void
+static void
 waydroid_mount_shared (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -400,7 +400,7 @@ waydroid_mount_shared (void)
   g_object_unref (waydroid_proxy);
 }
 
-void
+static void
 waydroid_umount_shared (void)
 {
   GDBusProxy *waydroid_proxy;
@@ -441,7 +441,7 @@ waydroid_umount_shared (void)
   g_object_unref (waydroid_proxy);
 }
 
-void
+static void
 waydroid_remove_app (const gchar *package_name)
 {
   GDBusProxy *waydroid_proxy;
@@ -482,7 +482,7 @@ waydroid_remove_app (const gchar *package_name)
   g_object_unref (waydroid_proxy);
 }
 
-void
+static void
 waydroid_install_app (const gchar *package_path)
 {
   GDBusProxy *waydroid_proxy;
@@ -523,7 +523,7 @@ waydroid_install_app (const gchar *package_path)
   g_object_unref (waydroid_proxy);
 }
 
-int
+static int
 is_mounted (const char *path)
 {
   FILE *fp;

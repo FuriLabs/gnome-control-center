@@ -234,6 +234,30 @@
                                   </object>
                                 </child>
 
+                                <child>
+                                  <object class="GtkButton" id="clear_app_data_button">
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="label" translatable="yes">Clear app data</property>
+                                        <property name="wrap">FALSE</property>
+                                        <property name="ellipsize">none</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
+                                <child>
+                                  <object class="GtkButton" id="kill_app_button">
+                                    <child>
+                                      <object class="GtkLabel">
+                                        <property name="label" translatable="yes">Kill app</property>
+                                        <property name="wrap">FALSE</property>
+                                        <property name="ellipsize">none</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+
                               </object>
                             </child>
                           </object>

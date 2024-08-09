@@ -26,6 +26,7 @@ enum PredefinedAction {
 
 struct _CcAssistantPanel {
   CcPanel            parent;
+  GtkWidget         *main_page;
   GtkCheckButton    *no_action;
   GtkCheckButton    *toggle_flashlight;
   GtkCheckButton    *open_camera;
@@ -40,6 +41,18 @@ struct _CcAssistantPanel {
 };
 
 G_DEFINE_TYPE (CcAssistantPanel, cc_assistant_panel, CC_TYPE_PANEL)
+
+static void
+update_action_sensitivity (CcAssistantPanel *self, gboolean sensitive)
+{
+  gtk_widget_set_sensitive (GTK_WIDGET (self->no_action), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->toggle_flashlight), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->open_camera), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->take_picture), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->take_screenshot), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->send_tab), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->manual_autorotate), sensitive);
+}
 
 static void
 ensure_config_directory (void)
@@ -173,6 +186,7 @@ on_gesture_toggled (GtkToggleButton *button, gpointer user_data)
   const gchar *button_id = gtk_buildable_get_buildable_id (GTK_BUILDABLE (button));
 
   if (gtk_toggle_button_get_active (button)) {
+    update_action_sensitivity (self, TRUE);
     AssistantGesture new_gesture;
     if (g_strcmp0 (button_id, "short_press") == 0)
       new_gesture = GESTURE_SHORT_PRESS;
@@ -198,16 +212,31 @@ cc_assistant_panel_finalize (GObject *object)
 }
 
 static void
+cc_assistant_panel_dispose (GObject *object)
+{
+  CcAssistantPanel *self = CC_ASSISTANT_PANEL (object);
+
+  if (self->main_page) {
+    gtk_widget_unparent (self->main_page);
+    self->main_page = NULL;
+  }
+
+  G_OBJECT_CLASS (cc_assistant_panel_parent_class)->dispose (object);
+}
+
+static void
 cc_assistant_panel_class_init (CcAssistantPanelClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
   object_class->finalize = cc_assistant_panel_finalize;
+  object_class->dispose = cc_assistant_panel_dispose;
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/org/gnome/control-center/assistant/cc-assistant-panel.ui");
 
+  gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, main_page);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, no_action);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, toggle_flashlight);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, open_camera);
@@ -239,6 +268,9 @@ cc_assistant_panel_init (CcAssistantPanel *self)
   g_signal_connect (self->double_press, "toggled", G_CALLBACK (on_gesture_toggled), self);
 
   ensure_config_directory ();
+
+  // on startup nothing is selected, set to false
+  update_action_sensitivity (self, FALSE);
 }
 
 CcAssistantPanel *

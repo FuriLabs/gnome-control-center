@@ -13,7 +13,7 @@
             <child>
               <object class="GtkScrolledWindow">
                 <child>
-                  <object class="AdwPreferencesPage">
+                  <object class="AdwPreferencesPage" id="main_page">
                     <child>
                       <object class="AdwPreferencesGroup">
                         <property name="title" translatable="yes">Assistant button settings</property>

@@ -38,7 +38,7 @@ struct _CcRemoteLoginPage {
   AdwActionRow    *hostname_row;
   AdwSwitchRow    *remote_login_row;
   AdwToastOverlay *toast_overlay;
-
+  GtkLabel        *ssh_status_label;
   GCancellable *cancellable;
 };
 
@@ -86,6 +86,8 @@ cc_remote_login_page_class_init (CcRemoteLoginPageClass * klass)
 
   gtk_widget_class_bind_template_callback (widget_class, on_copy_ssh_command_button_clicked);
   gtk_widget_class_bind_template_callback (widget_class, remote_login_row_activate);
+
+  gtk_widget_class_bind_template_child (widget_class, CcRemoteLoginPage, ssh_status_label);
 }
 
 static void
@@ -98,14 +100,20 @@ cc_remote_login_page_init (CcRemoteLoginPage *self)
 
   self->cancellable = g_cancellable_new ();
 
-  cc_remote_login_get_enabled (self->remote_login_row);
-  g_signal_connect_object (self->remote_login_row,
-                           "notify::active",
-                           G_CALLBACK (remote_login_row_activate),
-                           self,
-                           G_CONNECT_SWAPPED);
+  if (g_file_test ("/usr/sbin/sshd", G_FILE_TEST_EXISTS)) {
+    cc_remote_login_get_enabled (self->remote_login_row);
+    g_signal_connect_object (self->remote_login_row,
+                             "notify::active",
+                             G_CALLBACK (remote_login_row_activate),
+                             self,
+                             G_CONNECT_SWAPPED);
 
-  hostname = cc_hostname_get_display_hostname (cc_hostname_get_default ());
-  command = g_strdup_printf ("ssh %s", hostname);
-  adw_action_row_set_subtitle (self->hostname_row, command);
+    hostname = cc_hostname_get_display_hostname (cc_hostname_get_default ());
+    command = g_strdup_printf ("ssh %s", hostname);
+    adw_action_row_set_subtitle (self->hostname_row, command);
+  } else {
+    gtk_label_set_text (self->ssh_status_label, _("SSH server not installed"));
+    gtk_widget_set_sensitive (GTK_WIDGET (self->hostname_row), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->remote_login_row), FALSE);
+  }
 }

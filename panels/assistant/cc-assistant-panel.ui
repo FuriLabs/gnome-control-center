@@ -139,7 +139,7 @@
 
                             <child>
                               <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send tab key</property>
+                                <property name="title" translatable="yes">Send Tab key</property>
                                 <property name="use-underline">True</property>
                                 <child type="prefix">
                                   <object class="GtkCheckButton" id="send_tab">
@@ -165,10 +165,10 @@
 
                             <child>
                               <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send back key</property>
+                                <property name="title" translatable="yes">Send Back key</property>
                                 <property name="use-underline">True</property>
                                 <child type="prefix">
-                                  <object class="GtkCheckButton" id="send_back">
+                                  <object class="GtkCheckButton" id="send_xf86back">
                                     <property name="valign">center</property>
                                     <property name="group">no_action</property>
                                   </object>
@@ -178,10 +178,10 @@
 
                             <child>
                               <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send escape key</property>
+                                <property name="title" translatable="yes">Send Escape key</property>
                                 <property name="use-underline">True</property>
                                 <child type="prefix">
-                                  <object class="GtkCheckButton" id="send_esc">
+                                  <object class="GtkCheckButton" id="send_escape">
                                     <property name="valign">center</property>
                                     <property name="group">no_action</property>
                                   </object>

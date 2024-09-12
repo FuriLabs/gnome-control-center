@@ -22,8 +22,8 @@ enum PredefinedAction {
     TAKE_SCREENSHOT = 4,
     SEND_TAB = 5,
     MANUAL_AUTOROTATE = 6,
-    SEND_BACK = 7,
-    SEND_ESC = 8,
+    SEND_XF86BACK = 7,
+    SEND_ESCAPE = 8
 };
 
 struct _CcAssistantPanel {
@@ -36,8 +36,8 @@ struct _CcAssistantPanel {
   GtkCheckButton    *take_screenshot;
   GtkCheckButton    *send_tab;
   GtkCheckButton    *manual_autorotate;
-  GtkCheckButton    *send_back;
-  GtkCheckButton    *send_esc;
+  GtkCheckButton    *send_xf86back;
+  GtkCheckButton    *send_escape;
   GtkToggleButton   *short_press;
   GtkToggleButton   *long_press;
   GtkToggleButton   *double_press;
@@ -56,8 +56,8 @@ update_action_sensitivity (CcAssistantPanel *self, gboolean sensitive)
   gtk_widget_set_sensitive (GTK_WIDGET (self->take_screenshot), sensitive);
   gtk_widget_set_sensitive (GTK_WIDGET (self->send_tab), sensitive);
   gtk_widget_set_sensitive (GTK_WIDGET (self->manual_autorotate), sensitive);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->send_back), sensitive);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->send_esc), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->send_xf86back), sensitive);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->send_escape), sensitive);
 }
 
 static void
@@ -154,8 +154,8 @@ update_action_buttons (CcAssistantPanel *self, enum PredefinedAction action)
   gtk_check_button_set_active (self->take_screenshot, action == TAKE_SCREENSHOT);
   gtk_check_button_set_active (self->send_tab, action == SEND_TAB);
   gtk_check_button_set_active (self->manual_autorotate, action == MANUAL_AUTOROTATE);
-  gtk_check_button_set_active (self->send_back, action == SEND_BACK);
-  gtk_check_button_set_active (self->send_back, action == SEND_ESC);
+  gtk_check_button_set_active (self->send_xf86back, action == SEND_XF86BACK);
+  gtk_check_button_set_active (self->send_escape, action == SEND_ESCAPE);
 }
 
 static void
@@ -181,10 +181,10 @@ on_action_toggled (GtkCheckButton *button, gpointer user_data)
       action = SEND_TAB;
     else if (g_strcmp0 (action_id, "manual_autorotate") == 0)
       action = MANUAL_AUTOROTATE;
-    else if (g_strcmp0 (action_id, "send_back") == 0)
-      action = SEND_BACK;
-    else if (g_strcmp0 (action_id, "send_esc") == 0)
-      action = SEND_ESC;
+    else if (g_strcmp0 (action_id, "send_xf86back") == 0)
+      action = SEND_XF86BACK;
+    else if (g_strcmp0 (action_id, "send_escape") == 0)
+      action = SEND_ESCAPE;
 
     save_predefined_action (self->current_gesture, action);
     g_debug ("Action selected: %s (enum value: %d) for gesture: %d\n", action_id, action, self->current_gesture);
@@ -256,8 +256,8 @@ cc_assistant_panel_class_init (CcAssistantPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, take_screenshot);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, send_tab);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, manual_autorotate);
-  gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, send_back);
-  gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, send_esc);
+  gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, send_xf86back);
+  gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, send_escape);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, short_press);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, long_press);
   gtk_widget_class_bind_template_child (widget_class, CcAssistantPanel, double_press);
@@ -276,8 +276,8 @@ cc_assistant_panel_init (CcAssistantPanel *self)
   g_signal_connect (self->take_screenshot, "toggled", G_CALLBACK (on_action_toggled), self);
   g_signal_connect (self->send_tab, "toggled", G_CALLBACK (on_action_toggled), self);
   g_signal_connect (self->manual_autorotate, "toggled", G_CALLBACK (on_action_toggled), self);
-  g_signal_connect (self->send_back, "toggled", G_CALLBACK (on_action_toggled), self);
-  g_signal_connect (self->send_esc, "toggled", G_CALLBACK (on_action_toggled), self);
+  g_signal_connect (self->send_xf86back, "toggled", G_CALLBACK (on_action_toggled), self);
+  g_signal_connect (self->send_escape, "toggled", G_CALLBACK (on_action_toggled), self);
 
   g_signal_connect (self->short_press, "toggled", G_CALLBACK (on_gesture_toggled), self);
   g_signal_connect (self->long_press, "toggled", G_CALLBACK (on_gesture_toggled), self);

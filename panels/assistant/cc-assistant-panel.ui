@@ -139,7 +139,7 @@
 
                             <child>
                               <object class="AdwActionRow">
-                                <property name="title" translatable="yes">Send tab key</property>
+                                <property name="title" translatable="yes">Send Tab key</property>
                                 <property name="use-underline">True</property>
                                 <child type="prefix">
                                   <object class="GtkCheckButton" id="send_tab">
@@ -156,6 +156,32 @@
                                 <property name="use-underline">True</property>
                                 <child type="prefix">
                                   <object class="GtkCheckButton" id="manual_autorotate">
+                                    <property name="valign">center</property>
+                                    <property name="group">no_action</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title" translatable="yes">Send Back key</property>
+                                <property name="use-underline">True</property>
+                                <child type="prefix">
+                                  <object class="GtkCheckButton" id="send_xf86back">
+                                    <property name="valign">center</property>
+                                    <property name="group">no_action</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title" translatable="yes">Send Escape key</property>
+                                <property name="use-underline">True</property>
+                                <child type="prefix">
+                                  <object class="GtkCheckButton" id="send_escape">
                                     <property name="valign">center</property>
                                     <property name="group">no_action</property>
                                   </object>

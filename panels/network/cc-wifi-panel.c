@@ -28,8 +28,6 @@
 #include "shell/cc-log.h"
 #include "shell/cc-object-storage.h"
 
-#include "panels/wwan/cc-wwan-panel.h"
-
 #include <glib/gi18n.h>
 #include <NetworkManager.h>
 
@@ -773,17 +771,15 @@ rfkill_switch_notify_activate_cb (CcWifiPanel *self)
   enable = adw_switch_row_get_active (self->rfkill_row);
 
   if (enable) {
-    command = "systemctl stop ModemManager ofono";
+    command = "systemctl disable --now ModemManager ofono";
   } else {
-    command = "systemctl start ModemManager ofono";
+    command = "systemctl enable --now ModemManager ofono";
   }
 
   if (!g_spawn_command_line_sync (command, NULL, NULL, NULL, &error)) {
     g_printerr ("Error executing command: %s\n", error->message);
     g_error_free (error);
   }
-
-  cc_wwan_panel_static_init_func ();
 }
 #else
 static void

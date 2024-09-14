@@ -770,24 +770,11 @@ rfkill_switch_notify_activate_cb (CcWifiPanel *self)
   gchar *command;
   GError *error = NULL;
 
-  const gchar *home_dir = g_get_home_dir ();
-  gchar *filepath = g_strdup_printf ("%s/.airplane_mode", home_dir);
-
   enable = adw_switch_row_get_active (self->rfkill_row);
 
-  g_debug ("activate");
   if (enable) {
-    FILE *file = fopen(filepath, "w");
-    if (file != NULL)
-      fclose(file);
-    else
-      g_printerr ("Error creating ~/.airplane_mode");
-    g_debug ("stop");
     command = "systemctl stop ModemManager ofono";
   } else {
-   if (unlink (filepath) != 0)
-      g_printerr ("Error deleting ~/.airplane_mode");
-    g_debug ("start");
     command = "systemctl start ModemManager ofono";
   }
 
@@ -796,10 +783,7 @@ rfkill_switch_notify_activate_cb (CcWifiPanel *self)
     g_error_free (error);
   }
 
-  if (!g_file_test (filepath, G_FILE_TEST_EXISTS))
-    cc_wwan_panel_static_init_func ();
-
-  g_free (filepath);
+  cc_wwan_panel_static_init_func ();
 }
 #else
 static void

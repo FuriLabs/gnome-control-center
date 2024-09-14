@@ -39,7 +39,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *install_app_button;
   GtkWidget        *store_button;
   GtkWidget        *refresh_app_list_button;
-  GtkWidget        *waydroid_factory_reset;
+  GtkWidget        *factory_reset_button;
   GtkWidget        *clear_app_data_button;
   GtkWidget        *kill_app_button;
 };
@@ -651,27 +651,6 @@ is_mounted (const char *path)
 }
 
 static gboolean
-child_stdout_callback (GIOChannel *channel, GIOCondition condition, gpointer data)
-{
-  gchar *string;
-  gsize size;
-
-  if (g_io_channel_read_line(channel, &string, &size, NULL, NULL) == G_IO_STATUS_NORMAL) {
-    if (strstr (string, "Android with user 0 is ready") != NULL)
-        g_io_channel_shutdown (channel, FALSE, NULL);
-  }
-
-  g_free (string);
-  return TRUE;
-}
-
-static void
-child_exited_callback (GPid pid, gint status, gpointer data)
-{
-  g_spawn_close_pid (pid);
-}
-
-static gboolean
 update_ip_idle (gpointer user_data)
 {
   ThreadData *data = (ThreadData *) user_data;
@@ -722,9 +701,8 @@ update_app_list_idle (gpointer user_data)
   GtkStringList *list = gtk_string_list_new (initial_strings);
 
   for (gchar **app = apps; *app; app++) {
-    if (*app[0] != '\0') {
+    if (*app[0] != '\0')
       gtk_string_list_append (list, *app);
-    }
   }
 
   gtk_drop_down_set_model (drop_down, G_LIST_MODEL (list));
@@ -1060,8 +1038,8 @@ cc_waydroid_factory_reset_threaded (GtkWidget *widget, CcWaydroidPanel *self)
     g_warning ("Error running command: %s", error->message);
     g_clear_error (&error);
   } else {
-    gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), FALSE);
-    g_timeout_add_seconds (10, (GSourceFunc) gtk_widget_set_sensitive, self->waydroid_factory_reset);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->factory_reset_button), FALSE);
+    g_timeout_add_seconds (10, (GSourceFunc) gtk_widget_set_sensitive, self->factory_reset_button);
   }
 
   g_free (home_env);
@@ -1091,7 +1069,9 @@ reenable_switch_and_update_info (gpointer data)
   gtk_widget_set_sensitive (GTK_WIDGET (self->store_button), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), TRUE);
   gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_nfc_switch), TRUE);
-  gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), FALSE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->factory_reset_button), FALSE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->clear_app_data_button), TRUE);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->kill_app_button), TRUE);
 
   g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_launch_app_threaded), self);
   g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_uninstall_app), self);
@@ -1138,11 +1118,6 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
       return FALSE;
     }
 
-    GIOChannel *stdout_channel = g_io_channel_unix_new (stdout_fd);
-    g_io_add_watch (stdout_channel, G_IO_IN, (GIOFunc) child_stdout_callback, self);
-
-    g_child_watch_add (child_pid, (GChildWatchFunc) child_exited_callback, NULL);
-
     gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_enabled_switch), FALSE);
 
     // we should find a way to query the container instead of waiting aimlessly, waydroid status isn't good enough either
@@ -1177,7 +1152,7 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
     gtk_widget_set_sensitive (GTK_WIDGET (self->store_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_nfc_switch), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), TRUE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->factory_reset_button), TRUE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->clear_app_data_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->kill_app_button), FALSE);
   }
@@ -1278,7 +1253,7 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
-                                        waydroid_factory_reset);
+                                        factory_reset_button);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
@@ -1302,7 +1277,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
     g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
     g_signal_connect (G_OBJECT (self->waydroid_shared_folder_switch), "state-set", G_CALLBACK (cc_waydroid_panel_shared_folder), self);
     g_signal_connect (G_OBJECT (self->waydroid_nfc_switch), "state-set", G_CALLBACK (cc_waydroid_panel_nfc), self);
-    g_signal_connect (G_OBJECT (self->waydroid_factory_reset), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
+    g_signal_connect (G_OBJECT (self->factory_reset_button), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
 
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
     if (g_file_test (file_path, G_FILE_TEST_EXISTS)) {
@@ -1327,7 +1302,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       gtk_switch_set_active (GTK_SWITCH (self->waydroid_enabled_switch), TRUE);
       g_signal_handlers_unblock_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
 
-      gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), FALSE);
+      gtk_widget_set_sensitive (GTK_WIDGET (self->factory_reset_button), FALSE);
 
       g_signal_connect (G_OBJECT (self->launch_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_launch_app_threaded), self);
       g_signal_connect (G_OBJECT (self->remove_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_uninstall_app), self);
@@ -1403,7 +1378,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->store_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->waydroid_factory_reset), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->factory_reset_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->clear_app_data_button), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->kill_app_button), FALSE);
   }

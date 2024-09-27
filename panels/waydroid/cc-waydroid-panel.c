@@ -27,6 +27,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *waydroid_vendor_label;
   GtkWidget        *waydroid_version_label;
   AdwExpanderRow   *app_selector;
+  GtkListBox       *app_list;
   GListStore       *app_list_store;
   GtkWidget        *launch_app_button;
   GtkWidget        *remove_app_button;
@@ -860,24 +861,35 @@ on_app_activated (GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
   }
 }
 
+static int
+qsort_g_strcmp0 (const void *a, const void *b)
+{
+  return g_strcmp0 (*(const gchar **) a, *(const gchar **) b);
+}
+
 static gboolean
 update_app_list_idle (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
-
   AdwExpanderRow *expander_row = ADW_EXPANDER_ROW (self->app_selector);
-  GtkListBox *list_box;
+  GtkListBox *list_box = self->app_list;
+
+  if (!list_box) {
+    list_box = GTK_LIST_BOX (gtk_list_box_new ());
+    gtk_widget_set_margin_top (GTK_WIDGET (list_box), 8);
+    gtk_widget_set_margin_bottom (GTK_WIDGET (list_box), 8);
+    gtk_list_box_set_selection_mode (list_box, GTK_SELECTION_NONE);
+    g_signal_connect (list_box, "row-activated", G_CALLBACK (on_app_activated), self);
+
+    adw_expander_row_add_row (expander_row, GTK_WIDGET (list_box));
+    self->app_list = list_box;
+  } else {
+    gtk_list_box_remove_all (list_box);
+  }
 
   g_list_free_full (self->app_widgets, g_object_unref);
   self->app_widgets = NULL;
-
-  list_box = GTK_LIST_BOX (gtk_list_box_new ());
-  gtk_widget_set_margin_top (GTK_WIDGET (list_box), 8);
-  gtk_widget_set_margin_bottom (GTK_WIDGET (list_box), 8);
-  gtk_list_box_set_selection_mode (list_box, GTK_SELECTION_NONE);
-  g_signal_connect (list_box, "row-activated", G_CALLBACK (on_app_activated), self);
-
-  adw_expander_row_add_row (expander_row, GTK_WIDGET (list_box));
+  qsort (self->apps, g_strv_length (self->apps), sizeof (gchar *), qsort_g_strcmp0);
 
   for (gchar **app = self->apps; *app; app++) {
     if ((*app)[0] != '\0') {

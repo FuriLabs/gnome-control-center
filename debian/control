@@ -106,6 +106,7 @@ Recommends: cracklib-runtime,
             polkitd,
             power-profiles-daemon,
             realmd,
+            pqdbus,
             rygel | rygel-tracker,
             system-config-printer-common (>= 1.4)
 Suggests: gnome-software | gnome-packagekit,

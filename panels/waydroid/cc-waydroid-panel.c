@@ -37,6 +37,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *factory_reset_button;
   GtkWidget        *clear_app_data_button;
   GtkWidget        *kill_app_button;
+  AdwBottomSheet   *bottom_sheet;
 
   gchar            **apps;
   GList            *app_widgets;
@@ -857,7 +858,7 @@ on_app_activated (GtkListBox *box, GtkListBoxRow *row, gpointer user_data)
     g_debug ("Selected app: %s", self->selected_app_name);
     g_debug ("Package name: %s", self->selected_app_pkgname);
 
-    adw_expander_row_set_expanded (self->app_selector, FALSE);
+    adw_bottom_sheet_set_open (self->bottom_sheet, TRUE);
   }
 }
 
@@ -1353,6 +1354,10 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
                                         toast_overlay);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcWaydroidPanel,
+                                        bottom_sheet);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,

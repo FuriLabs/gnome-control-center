@@ -67,6 +67,7 @@ Standards-Version: 4.7.0
 Rules-Requires-Root: no
 Vcs-Git: https://salsa.debian.org/gnome-team/gnome-control-center.git
 Vcs-Browser: https://salsa.debian.org/gnome-team/gnome-control-center
+XS-FuriOS-Extra-Repos: deb http://furilabs-gtk4.repo.furios.io/trixie-upgrade-4-16-1/ trixie main
 
 Package: gnome-control-center
 Architecture: any

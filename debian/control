@@ -88,6 +88,7 @@ Depends: accountsservice,
          malcontent-gui [amd64 arm64 armel armhf i386 mips64el ppc64el riscv64 s390x hppa powerpc ppc64 x32],
          tecla (>= 45~rc),
          webp-pixbuf-loader,
+         pq-gsettings,
          ${misc:Depends},
          ${shlibs:Depends}
 Recommends: cracklib-runtime,

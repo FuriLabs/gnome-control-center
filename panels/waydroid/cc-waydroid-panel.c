@@ -47,6 +47,8 @@ struct _CcWaydroidPanel {
   gchar            *waydroid_ip_output;
   gchar            *waydroid_vendor_output;
   gchar            *waydroid_version_output;
+
+  gboolean         refreshing;
 };
 
 G_DEFINE_TYPE (CcWaydroidPanel, cc_waydroid_panel, CC_TYPE_PANEL)
@@ -869,11 +871,22 @@ qsort_g_strcmp0 (const void *a, const void *b)
 }
 
 static gboolean
+set_refresh_sensitive (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+  gtk_widget_set_sensitive (GTK_WIDGET (self->refresh_app_list_button), !self->refreshing);
+  gtk_widget_set_sensitive (GTK_WIDGET (self->app_selector), !self->refreshing);
+  return G_SOURCE_REMOVE;
+}
+
+static gboolean
 update_app_list_idle (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
   AdwExpanderRow *expander_row = ADW_EXPANDER_ROW (self->app_selector);
   GtkListBox *list_box = self->app_list;
+
+  adw_expander_row_set_expanded (self->app_selector, FALSE);
 
   if (!list_box) {
     list_box = GTK_LIST_BOX (gtk_list_box_new ());
@@ -903,6 +916,9 @@ update_app_list_idle (gpointer user_data)
 
   g_strfreev (self->apps);
 
+  self->refreshing = FALSE;
+  g_idle_add (set_refresh_sensitive, self);
+
   return G_SOURCE_REMOVE;
 }
 
@@ -911,9 +927,13 @@ update_app_list (gpointer user_data)
 {
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
 
+  self->refreshing = TRUE;
+  g_idle_add (set_refresh_sensitive, self);
   self->apps = waydroid_get_all_names ();
   if (self->apps == NULL) {
     g_debug ("Failed to get app names");
+    self->refreshing = FALSE;
+    g_idle_add (set_refresh_sensitive, self);
     return NULL;
   }
 

@@ -64,6 +64,14 @@ cc_waydroid_panel_finalize (GObject *object)
     g_free (self->selected_app_name);
   if (self->selected_app_pkgname != NULL)
     g_free (self->selected_app_pkgname);
+  if (self->waydroid_ip_output != NULL)
+    g_free (self->waydroid_ip_output);
+  if (self->waydroid_vendor_output != NULL)
+    g_free (self->waydroid_vendor_output);
+  if (self->waydroid_version_output != NULL)
+    g_free (self->waydroid_version_output);
+  if (self->apps != NULL)
+    g_strfreev (self->apps);
 
   self->app_widgets = NULL;
 
@@ -779,8 +787,6 @@ update_ip_idle (gpointer user_data)
 
   gtk_label_set_text (GTK_LABEL (self->waydroid_ip_label), self->waydroid_ip_output);
 
-  g_free (self->waydroid_ip_output);
-
   return G_SOURCE_REMOVE;
 }
 
@@ -888,6 +894,11 @@ update_app_list_idle (gpointer user_data)
 
   adw_expander_row_set_expanded (self->app_selector, FALSE);
 
+  if (self->apps == NULL) {
+    g_debug ("apps array is NULL");
+    return G_SOURCE_REMOVE;
+  }
+
   if (!list_box) {
     list_box = GTK_LIST_BOX (gtk_list_box_new ());
     gtk_widget_set_margin_top (GTK_WIDGET (list_box), 8);
@@ -913,8 +924,6 @@ update_app_list_idle (gpointer user_data)
       g_debug ("Added row for app: %s", *app);
     }
   }
-
-  g_strfreev (self->apps);
 
   self->refreshing = FALSE;
   g_idle_add (set_refresh_sensitive, self);
@@ -1022,8 +1031,6 @@ update_vendor_idle (gpointer user_data)
 
   gtk_label_set_text (GTK_LABEL (self->waydroid_vendor_label), self->waydroid_vendor_output);
 
-  g_free (self->waydroid_vendor_output);
-
   return G_SOURCE_REMOVE;
 }
 
@@ -1051,8 +1058,6 @@ update_version_idle (gpointer user_data)
   CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
 
   gtk_label_set_text (GTK_LABEL (self->waydroid_version_label), self->waydroid_version_output);
-
-  g_free (self->waydroid_version_output);
 
   return G_SOURCE_REMOVE;
 }
@@ -1454,6 +1459,10 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
   self->selected_app_name = NULL;
   self->selected_app_pkgname = NULL;
+  self->waydroid_ip_output = NULL;
+  self->waydroid_vendor_output = NULL;
+  self->waydroid_version_output = NULL;
+  self->apps = NULL;
 
   if (g_file_test ("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
     g_signal_connect (G_OBJECT (self->waydroid_enabled_switch), "state-set", G_CALLBACK (cc_waydroid_panel_enable_waydroid), self);

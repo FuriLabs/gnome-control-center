@@ -23,8 +23,9 @@ struct _CcUsbPanel {
   GtkWidget        *cdrom_enabled_switch;
   GtkWidget        *iso_selection_switch;
   GtkWidget        *iso_label;
-  GtkComboBoxText  *usb_state_dropdown;
-  GtkWidget        *help_button;
+  GtkWidget        *usb_state_mtp;
+  GtkWidget        *usb_state_rndis;
+  GtkWidget        *usb_state_none;
   char             *path;
 };
 
@@ -44,15 +45,15 @@ cc_usb_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcUsbPanel *self)
 
   if (state) {
     if (unlink (filepath) != 0)
-        g_printerr ("Error deleting ~/.mtp_disable");
+      g_printerr ("Error deleting ~/.mtp_disable");
 
     system ("systemctl --user start mtp-server");
   } else {
     FILE *file = fopen (filepath, "w");
     if (file != NULL)
-        fclose (file);
+      fclose (file);
     else
-        g_printerr ("Error creating ~/.mtp_disable");
+      g_printerr ("Error creating ~/.mtp_disable");
 
     system ("systemctl --user stop mtp-server");
   }
@@ -61,26 +62,6 @@ cc_usb_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcUsbPanel *self)
 
   gtk_switch_set_state (GTK_SWITCH (self->mtp_enabled_switch), state);
   gtk_switch_set_active (GTK_SWITCH (self->mtp_enabled_switch), state);
-}
-
-static void
-cc_usb_panel_help_button_clicked (GtkButton *button, CcUsbPanel *self)
-{
-  const gchar *selected_mode = gtk_combo_box_get_active_id (GTK_COMBO_BOX (self->usb_state_dropdown));
-  gchar *message;
-
-  if (g_strcmp0 (selected_mode, "mtp") == 0)
-    message = "MTP: Media Transfer Protocol, allows you to transfer files via a USB connection";
-  else if (g_strcmp0 (selected_mode, "rndis") == 0)
-    message = "RNDIS: Remote Network Driver Interface Specification, allows for USB networking and SSH over a USB connection";
-  else
-    message = "None: Disables all special USB functionalities.";
-
-  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (gtk_widget_get_ancestor (GTK_WIDGET (self), GTK_TYPE_WINDOW)), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "%s", message);
-
-  g_signal_connect (dialog, "response", G_CALLBACK (gtk_window_destroy), NULL);
-
-  gtk_window_present (GTK_WINDOW (dialog));
 }
 
 static void
@@ -121,9 +102,16 @@ usb_set_mode (const char *mode)
 }
 
 static void
-cc_usb_panel_usb_state_changed (GtkComboBox *widget, CcUsbPanel *self)
+cc_usb_panel_usb_state_changed (GtkCheckButton *button, CcUsbPanel *self)
 {
-  const gchar *selected_mode = gtk_combo_box_get_active_id (GTK_COMBO_BOX (self->usb_state_dropdown));
+  const gchar *selected_mode;
+
+  if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->usb_state_mtp)))
+    selected_mode = "mtp";
+  else if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->usb_state_rndis)))
+    selected_mode = "rndis";
+  else
+    selected_mode = "none";
 
   g_debug ("Selected USB state: %s", selected_mode);
   usb_set_mode (selected_mode);
@@ -271,11 +259,15 @@ cc_usb_panel_class_init (CcUsbPanelClass *klass)
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcUsbPanel,
-                                        usb_state_dropdown);
+                                        usb_state_mtp);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcUsbPanel,
-                                        help_button);
+                                        usb_state_rndis);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcUsbPanel,
+                                        usb_state_none);
 }
 
 static void
@@ -288,12 +280,12 @@ cc_usb_panel_init (CcUsbPanel *self)
 
   if (!mtp_supported) {
     gtk_widget_set_sensitive (GTK_WIDGET (self->mtp_enabled_switch), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_dropdown), FALSE);
-    gtk_widget_set_sensitive (GTK_WIDGET (self->help_button), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_mtp), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_rndis), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
   } else {
     if (g_file_test ("/usr/bin/mtp-server", G_FILE_TEST_EXISTS)) {
       g_signal_connect (G_OBJECT (self->mtp_enabled_switch), "state-set", G_CALLBACK (cc_usb_panel_enable_mtp), self);
-      g_signal_connect (G_OBJECT (self->help_button), "clicked", G_CALLBACK (cc_usb_panel_help_button_clicked), self);
 
       gchar *mtp_output;
       g_spawn_command_line_sync ("systemctl --user is-active mtp-server", &mtp_output, NULL, NULL, NULL);
@@ -317,14 +309,31 @@ cc_usb_panel_init (CcUsbPanel *self)
 
   char *current_state = usb_get_current_state ();
   if (current_state) {
-    g_signal_connect (G_OBJECT (self->usb_state_dropdown), "changed", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
-    g_signal_handlers_block_by_func (self->usb_state_dropdown, cc_usb_panel_usb_state_changed, self);
-    gtk_combo_box_set_active_id (GTK_COMBO_BOX (self->usb_state_dropdown), current_state);
-    g_signal_handlers_unblock_by_func (self->usb_state_dropdown, cc_usb_panel_usb_state_changed, self);
+    g_signal_connect (G_OBJECT (self->usb_state_mtp), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
+    g_signal_connect (G_OBJECT (self->usb_state_rndis), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
+    g_signal_connect (G_OBJECT (self->usb_state_none), "toggled", G_CALLBACK (cc_usb_panel_usb_state_changed), self);
+
+    g_signal_handlers_block_by_func (self->usb_state_mtp, cc_usb_panel_usb_state_changed, self);
+    g_signal_handlers_block_by_func (self->usb_state_rndis, cc_usb_panel_usb_state_changed, self);
+    g_signal_handlers_block_by_func (self->usb_state_none, cc_usb_panel_usb_state_changed, self);
+
+    if (g_strcmp0 (current_state, "mtp") == 0)
+      gtk_check_button_set_active (GTK_CHECK_BUTTON (self->usb_state_mtp), TRUE);
+    else if (g_strcmp0 (current_state, "rndis") == 0)
+      gtk_check_button_set_active (GTK_CHECK_BUTTON (self->usb_state_rndis), TRUE);
+    else
+      gtk_check_button_set_active (GTK_CHECK_BUTTON (self->usb_state_none), TRUE);
+
+    g_signal_handlers_unblock_by_func (self->usb_state_mtp, cc_usb_panel_usb_state_changed, self);
+    g_signal_handlers_unblock_by_func (self->usb_state_rndis, cc_usb_panel_usb_state_changed, self);
+    g_signal_handlers_unblock_by_func (self->usb_state_none, cc_usb_panel_usb_state_changed, self);
+
     g_free (current_state);
   } else {
     g_debug ("Failed to get CurrentState from USBConfig, marking as unavailable");
-    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_dropdown), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_mtp), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_rndis), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
   }
 
   gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), FALSE);

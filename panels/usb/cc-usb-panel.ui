@@ -133,6 +133,45 @@
 
                       </object>
                     </child>
+
+                    <child>
+                      <object class="AdwPreferencesGroup">
+                        <property name="title" translatable="yes">USB Port Settings</property>
+                        <child>
+                          <object class="AdwExpanderRow">
+                            <property name="title" translatable="yes">USB Power Role</property>
+                            <property name="subtitle" translatable="yes">Choose the USB power role</property>
+
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title" translatable="yes">Sink</property>
+                                <property name="subtitle" translatable="yes">Device receives power from the connected USB host</property>
+                                <child>
+                                  <object class="GtkCheckButton" id="power_role_sink">
+                                    <property name="valign">center</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                            <child>
+                              <object class="AdwActionRow">
+                                <property name="title" translatable="yes">Source</property>
+                                <property name="subtitle" translatable="yes">Device provides power to the connected USB device</property>
+                                <child>
+                                  <object class="GtkCheckButton" id="power_role_source">
+                                    <property name="valign">center</property>
+                                    <property name="group">power_role_sink</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
                   </object>
                 </child>
               </object>

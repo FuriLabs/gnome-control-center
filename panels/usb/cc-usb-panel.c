@@ -8,14 +8,13 @@
 #include "cc-usb-resources.h"
 #include "cc-util.h"
 
-#include <adwaita.h>
-#include <gtk/gtk.h>
-#include <gio/gdesktopappinfo.h>
-#include <glib/gi18n.h>
-
 #define USBCONFIG_DBUS_NAME          "io.FuriOS.USBConfig"
 #define USBCONFIG_DBUS_PATH          "/io/FuriOS/USBConfig"
 #define USBCONFIG_DBUS_INTERFACE     "io.FuriOS.USBConfig"
+
+#define POWERCONFIG_DBUS_NAME          "io.FuriOS.BatmanPowerConfig"
+#define POWERCONFIG_DBUS_PATH          "/io/FuriOS/BatmanPowerConfig"
+#define POWERCONFIG_DBUS_INTERFACE     "io.FuriOS.BatmanPowerConfig"
 
 struct _CcUsbPanel {
   CcPanel            parent;
@@ -26,6 +25,8 @@ struct _CcUsbPanel {
   GtkWidget        *usb_state_mtp;
   GtkWidget        *usb_state_rndis;
   GtkWidget        *usb_state_none;
+  GtkWidget        *power_role_sink;
+  GtkWidget        *power_role_source;
   char             *path;
 };
 
@@ -102,6 +103,97 @@ usb_set_mode (const char *mode)
 }
 
 static void
+powerconfig_set (const char *method, const char *mode)
+{
+  GDBusProxy *powerconfig_proxy;
+  GError *error = NULL;
+
+  powerconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    POWERCONFIG_DBUS_NAME,
+    POWERCONFIG_DBUS_PATH,
+    POWERCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return;
+  }
+
+  g_dbus_proxy_call(
+    powerconfig_proxy,
+    method,
+    g_variant_new("(s)", mode),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    NULL,
+    NULL
+  );
+
+  g_object_unref (powerconfig_proxy);
+}
+
+static char *
+powerconfig_get (const char *prop)
+{
+  GDBusProxy *powerconfig_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  char *power_role = NULL;
+
+  powerconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    POWERCONFIG_DBUS_NAME,
+    POWERCONFIG_DBUS_PATH,
+    POWERCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    powerconfig_proxy,
+    "org.freedesktop.DBus.Properties.Get",
+    g_variant_new ("(ss)", POWERCONFIG_DBUS_INTERFACE, prop),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling method: %s\n", error->message);
+    g_clear_error (&error);
+    g_object_unref (powerconfig_proxy);
+    return NULL;
+  }
+
+  if (result) {
+    GVariant *role_variant;
+    g_variant_get (result, "(v)", &role_variant);
+    power_role = g_strdup (g_variant_get_string (role_variant, NULL));
+    g_variant_unref (role_variant);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (powerconfig_proxy);
+  return power_role;
+}
+
+static void
 cc_usb_panel_usb_state_changed (GtkCheckButton *button, CcUsbPanel *self)
 {
   const gchar *selected_mode;
@@ -115,6 +207,23 @@ cc_usb_panel_usb_state_changed (GtkCheckButton *button, CcUsbPanel *self)
 
   g_debug ("Selected USB state: %s", selected_mode);
   usb_set_mode (selected_mode);
+}
+
+static void
+cc_usb_panel_power_role_changed (GtkCheckButton *button, CcUsbPanel *self)
+{
+  const gchar *selected_role;
+
+  if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->power_role_sink)))
+    selected_role = "sink";
+  else if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->power_role_source)))
+    selected_role = "source";
+  else
+    return;
+
+  g_debug ("Selected USB Power Role: %s", selected_role);
+  powerconfig_set ("SetPowerRole", selected_role);
+  powerconfig_set ("SetPreferredRole", selected_role);
 }
 
 static void
@@ -156,7 +265,7 @@ on_file_chosen (GtkFileChooserNative *native, gint response_id, CcUsbPanel *self
   gtk_native_dialog_destroy (GTK_NATIVE_DIALOG (native));
 }
 
-static char*
+static char *
 usb_get_current_state (void)
 {
   GDBusProxy *usbconfig_proxy;
@@ -268,6 +377,14 @@ cc_usb_panel_class_init (CcUsbPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcUsbPanel,
                                         usb_state_none);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcUsbPanel,
+                                        power_role_sink);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcUsbPanel,
+                                        power_role_source);
 }
 
 static void
@@ -334,6 +451,30 @@ cc_usb_panel_init (CcUsbPanel *self)
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_mtp), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_rndis), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
+  }
+
+  char *preferred_role = powerconfig_get ("PreferredRole");
+
+  if (preferred_role) {
+    g_signal_connect (G_OBJECT (self->power_role_sink), "toggled", G_CALLBACK (cc_usb_panel_power_role_changed), self);
+    g_signal_connect (G_OBJECT (self->power_role_source), "toggled", G_CALLBACK (cc_usb_panel_power_role_changed), self);
+
+    g_signal_handlers_block_by_func (self->power_role_sink, cc_usb_panel_power_role_changed, self);
+    g_signal_handlers_block_by_func (self->power_role_source, cc_usb_panel_power_role_changed, self);
+
+    if (g_strcmp0 (preferred_role, "sink") == 0)
+      gtk_check_button_set_active (GTK_CHECK_BUTTON (self->power_role_sink), TRUE);
+    else if (g_strcmp0 (preferred_role, "source") == 0)
+      gtk_check_button_set_active (GTK_CHECK_BUTTON (self->power_role_source), TRUE);
+
+    g_signal_handlers_unblock_by_func (self->power_role_sink, cc_usb_panel_power_role_changed, self);
+    g_signal_handlers_unblock_by_func (self->power_role_source, cc_usb_panel_power_role_changed, self);
+
+    g_free (preferred_role);
+  } else {
+    g_debug ("Failed to get PreferredRole from PowerConfig, marking as unavailable");
+    gtk_widget_set_sensitive (GTK_WIDGET (self->power_role_sink), FALSE);
+    gtk_widget_set_sensitive (GTK_WIDGET (self->power_role_source), FALSE);
   }
 
   gtk_widget_set_sensitive (GTK_WIDGET (self->cdrom_enabled_switch), FALSE);

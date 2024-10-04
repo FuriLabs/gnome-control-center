@@ -96,5 +96,7 @@ gboolean cc_wwan_device_pin_valid (const gchar *password, MMModemLock lock);
 GPtrArray *cc_wwan_device_get_sim_slots (CcWwanDevice *self, GCancellable *cancellable);
 void cc_wwan_device_set_primary_sim_slot (CcWwanDevice *self, guint sim_slot, GCancellable *cancellable);
 guint cc_wwan_device_get_primary_sim_slot (CcWwanDevice *self);
-
+gchar *cc_wwan_device_get_ims_registered (CcWwanDevice *self);
+gchar *cc_wwan_device_get_ims_voice_capable (CcWwanDevice *self);
+gchar *cc_wwan_device_get_ims_sms_capable (CcWwanDevice *self);
 G_END_DECLS

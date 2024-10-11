@@ -11,7 +11,8 @@ i18n.merge_file(
 )
 
 sources = files(
-  'cc-nfc-panel.c'
+  'cc-nfc-panel.c',
+  'cc-systemd-service.c'
 )
 
 resource_data = files(

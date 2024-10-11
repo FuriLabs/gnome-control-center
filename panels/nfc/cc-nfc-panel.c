@@ -12,9 +12,13 @@
 #include <gio/gdesktopappinfo.h>
 #include <glib/gi18n.h>
 
+#define WAYDROID_SESSION_DBUS_NAME          "id.waydro.Session"
+#define WAYDROID_SESSION_DBUS_PATH          "/SessionManager"
+#define WAYDROID_SESSION_DBUS_INTERFACE     "id.waydro.SessionManager"
+
 struct _CcNfcPanel {
   CcPanel            parent;
-  GtkWidget        *nfc_enabled_switch;
+  GtkWidget         *nfc_enabled_switch;
 };
 
 G_DEFINE_TYPE (CcNfcPanel, cc_nfc_panel, CC_TYPE_PANEL)
@@ -37,15 +41,15 @@ cc_nfc_panel_enable_nfc (GtkSwitch *widget, gboolean state, CcNfcPanel *self)
 
   if (state) {
     if (unlink (filepath) != 0)
-        g_printerr ("Error deleting ~/.nfc_disable");
+      g_printerr ("Error deleting ~/.nfc_disable");
 
     g_spawn_command_line_sync ("systemctl start nfcd", NULL, NULL, NULL, &error);
   } else {
     FILE *file = fopen (filepath, "w");
     if (file != NULL)
-        fclose (file);
+      fclose (file);
     else
-        g_printerr ("Error creating ~/.nfc_disable");
+      g_printerr ("Error creating ~/.nfc_disable");
 
     g_spawn_command_line_sync ("systemctl stop nfcd", NULL, NULL, NULL, &error);
   }
@@ -63,6 +67,51 @@ cc_nfc_panel_enable_nfc (GtkSwitch *widget, gboolean state, CcNfcPanel *self)
 
     return FALSE;
   }
+
+  return TRUE;
+}
+
+static gboolean
+ping_waydroid (void)
+{
+  GDBusProxy *waydroid_proxy;
+  GError *error = NULL;
+
+  waydroid_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SESSION,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    WAYDROID_SESSION_DBUS_NAME,
+    WAYDROID_SESSION_DBUS_PATH,
+    WAYDROID_SESSION_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s", error->message);
+    g_clear_error (&error);
+    return FALSE;
+  }
+
+  // we don't want the result, its just a test to check if its running
+  g_dbus_proxy_call_sync(
+    waydroid_proxy,
+    "VendorType",
+    NULL,
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_clear_error (&error);
+    g_object_unref (waydroid_proxy);
+    return FALSE;
+  }
+
+  g_object_unref (waydroid_proxy);
 
   return TRUE;
 }
@@ -88,34 +137,42 @@ cc_nfc_panel_init (CcNfcPanel *self)
   g_resources_register (cc_nfc_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  gint exit_status;
-  g_spawn_command_line_sync ("systemctl --no-pager --quiet is-failed nfcd", NULL, NULL, &exit_status, NULL);
-
-  if (g_file_test ("/usr/sbin/nfcd", G_FILE_TEST_EXISTS)) {
-    if (exit_status == 0) {
-      gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
-    } else {
-      g_signal_connect (G_OBJECT (self->nfc_enabled_switch), "state-set", G_CALLBACK (cc_nfc_panel_enable_nfc), self);
-
-      // Check if nfcd is running
-      gint nfc_exit_status;
-      g_spawn_command_line_sync ("systemctl is-active -q nfcd", NULL, NULL, &nfc_exit_status, NULL);
-
-      // If the nfcd is active, set the switch to ON
-      if (nfc_exit_status == 0) {
-        g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
-        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
-        g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+  gboolean waydroid_active = FALSE;
+  waydroid_active = ping_waydroid ();
+  if (!waydroid_active) {
+    if (g_file_test ("/usr/sbin/nfcd", G_FILE_TEST_EXISTS)) {
+      gint exit_status;
+      g_spawn_command_line_sync ("systemctl --no-pager --quiet is-failed nfcd", NULL, NULL, &exit_status, NULL);
+      if (exit_status == 0) {
+        gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
       } else {
-        g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-        gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
-        gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
-        g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+        g_signal_connect (G_OBJECT (self->nfc_enabled_switch), "state-set", G_CALLBACK (cc_nfc_panel_enable_nfc), self);
+
+        // Check if nfcd is running
+        gint nfc_exit_status;
+        g_spawn_command_line_sync ("systemctl is-active -q nfcd", NULL, NULL, &nfc_exit_status, NULL);
+
+        // If the nfcd is active, set the switch to ON
+        if (nfc_exit_status == 0) {
+          g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+          gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+          gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), TRUE);
+          g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+        } else {
+          g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+          gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+          gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), FALSE);
+          g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+        }
       }
+    } else {
+      g_debug ("NFCd is not installed, setting sensitivity to false");
+      gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
     }
-  } else
+  } else {
+    g_debug ("Android is running, setting sensitivity to false");
     gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
+  }
 }
 
 CcNfcPanel *

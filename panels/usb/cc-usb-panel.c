@@ -8,17 +8,20 @@
 #include "cc-usb-resources.h"
 #include "cc-util.h"
 
-#define USBCONFIG_DBUS_NAME          "io.FuriOS.USBConfig"
-#define USBCONFIG_DBUS_PATH          "/io/FuriOS/USBConfig"
-#define USBCONFIG_DBUS_INTERFACE     "io.FuriOS.USBConfig"
+#include "panels/nfc/cc-systemd-service.h"
+
+#define USBCONFIG_DBUS_NAME            "io.FuriOS.USBConfig"
+#define USBCONFIG_DBUS_PATH            "/io/FuriOS/USBConfig"
+#define USBCONFIG_DBUS_INTERFACE       "io.FuriOS.USBConfig"
 
 #define POWERCONFIG_DBUS_NAME          "io.FuriOS.BatmanPowerConfig"
 #define POWERCONFIG_DBUS_PATH          "/io/FuriOS/BatmanPowerConfig"
 #define POWERCONFIG_DBUS_INTERFACE     "io.FuriOS.BatmanPowerConfig"
 
+#define MTP_SERVER_SERVICE             "mtp-server.service"
+
 struct _CcUsbPanel {
   CcPanel            parent;
-  GtkWidget        *mtp_enabled_switch;
   GtkWidget        *cdrom_enabled_switch;
   GtkWidget        *iso_selection_switch;
   GtkWidget        *iso_label;
@@ -36,33 +39,6 @@ static void
 cc_usb_panel_finalize (GObject *object)
 {
   G_OBJECT_CLASS (cc_usb_panel_parent_class)->finalize (object);
-}
-
-static void
-cc_usb_panel_enable_mtp (GtkSwitch *widget, gboolean state, CcUsbPanel *self)
-{
-  const gchar *home_dir = g_get_home_dir ();
-  gchar *filepath = g_strdup_printf ("%s/.mtp_disable", home_dir);
-
-  if (state) {
-    if (unlink (filepath) != 0)
-      g_printerr ("Error deleting ~/.mtp_disable");
-
-    system ("systemctl --user start mtp-server");
-  } else {
-    FILE *file = fopen (filepath, "w");
-    if (file != NULL)
-      fclose (file);
-    else
-      g_printerr ("Error creating ~/.mtp_disable");
-
-    system ("systemctl --user stop mtp-server");
-  }
-
-  g_free (filepath);
-
-  gtk_switch_set_state (GTK_SWITCH (self->mtp_enabled_switch), state);
-  gtk_switch_set_active (GTK_SWITCH (self->mtp_enabled_switch), state);
 }
 
 static void
@@ -100,6 +76,60 @@ usb_set_mode (const char *mode)
   );
 
   g_object_unref (usbconfig_proxy);
+}
+
+static char *
+usb_get_current_state (void)
+{
+  GDBusProxy *usbconfig_proxy;
+  GError *error = NULL;
+  GVariant *result;
+  char *current_state = NULL;
+
+  usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
+    G_BUS_TYPE_SYSTEM,
+    G_DBUS_PROXY_FLAGS_NONE,
+    NULL,
+    USBCONFIG_DBUS_NAME,
+    USBCONFIG_DBUS_PATH,
+    USBCONFIG_DBUS_INTERFACE,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error creating proxy: %s\n", error->message);
+    g_clear_error (&error);
+    return NULL;
+  }
+
+  result = g_dbus_proxy_call_sync(
+    usbconfig_proxy,
+    "org.freedesktop.DBus.Properties.Get",
+    g_variant_new ("(ss)", USBCONFIG_DBUS_INTERFACE, "CurrentState"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    NULL,
+    &error
+  );
+
+  if (error) {
+    g_debug ("Error calling method: %s\n", error->message);
+    g_clear_error (&error);
+    g_object_unref (usbconfig_proxy);
+    return NULL;
+  }
+
+  if (result) {
+    GVariant *state_variant;
+    g_variant_get (result, "(v)", &state_variant);
+    current_state = g_strdup (g_variant_get_string (state_variant, NULL));
+    g_variant_unref (state_variant);
+    g_variant_unref (result);
+  }
+
+  g_object_unref (usbconfig_proxy);
+  return current_state;
 }
 
 static void
@@ -194,19 +224,63 @@ powerconfig_get (const char *prop)
 }
 
 static void
+cc_usb_panel_enable_mtp (CcUsbPanel *self, gboolean state)
+{
+  GError *error = NULL;
+  const gchar *home_dir = g_get_home_dir ();
+  gchar *filepath = g_build_filename (home_dir, ".mtp_disable", NULL);
+  GFile *file = g_file_new_for_path (filepath);
+
+  if (state) {
+    if (!g_file_delete (file, NULL, &error)) {
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Error deleting %s: %s", filepath, error->message);
+      g_clear_error (&error);
+    }
+    cc_start_service (MTP_SERVER_SERVICE, G_BUS_TYPE_SESSION, &error);
+  } else {
+    cc_stop_service (MTP_SERVER_SERVICE, G_BUS_TYPE_SESSION, &error);
+    if (!g_file_query_exists (file, NULL)) {
+      GFileOutputStream *output_stream = g_file_create (file, G_FILE_CREATE_NONE, NULL, &error);
+      if (output_stream != NULL) {
+        g_output_stream_close (G_OUTPUT_STREAM (output_stream), NULL, NULL);
+        g_object_unref (output_stream);
+      } else {
+        g_warning ("Error creating %s: %s", filepath, error->message);
+        g_clear_error (&error);
+      }
+    }
+  }
+
+  g_object_unref (file);
+  g_free (filepath);
+
+  if (error != NULL) {
+    g_warning ("Failed to toggle mtp server service: %s", error->message);
+    g_error_free (error);
+  }
+}
+
+static void
 cc_usb_panel_usb_state_changed (GtkCheckButton *button, CcUsbPanel *self)
 {
   const gchar *selected_mode;
+  gboolean mtp_enabled = FALSE;
 
-  if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->usb_state_mtp)))
+  if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->usb_state_mtp))) {
     selected_mode = "mtp";
-  else if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->usb_state_rndis)))
+    mtp_enabled = TRUE;
+  } else if (gtk_check_button_get_active (GTK_CHECK_BUTTON (self->usb_state_rndis))) {
     selected_mode = "rndis";
-  else
+    mtp_enabled = FALSE;
+  } else {
     selected_mode = "none";
+    mtp_enabled = FALSE;
+  }
 
   g_debug ("Selected USB state: %s", selected_mode);
   usb_set_mode (selected_mode);
+  cc_usb_panel_enable_mtp (self, mtp_enabled);
 }
 
 static void
@@ -265,60 +339,6 @@ on_file_chosen (GtkFileChooserNative *native, gint response_id, CcUsbPanel *self
   gtk_native_dialog_destroy (GTK_NATIVE_DIALOG (native));
 }
 
-static char *
-usb_get_current_state (void)
-{
-  GDBusProxy *usbconfig_proxy;
-  GError *error = NULL;
-  GVariant *result;
-  char *current_state = NULL;
-
-  usbconfig_proxy = g_dbus_proxy_new_for_bus_sync(
-    G_BUS_TYPE_SYSTEM,
-    G_DBUS_PROXY_FLAGS_NONE,
-    NULL,
-    USBCONFIG_DBUS_NAME,
-    USBCONFIG_DBUS_PATH,
-    USBCONFIG_DBUS_INTERFACE,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error creating proxy: %s\n", error->message);
-    g_clear_error (&error);
-    return NULL;
-  }
-
-  result = g_dbus_proxy_call_sync(
-    usbconfig_proxy,
-    "org.freedesktop.DBus.Properties.Get",
-    g_variant_new ("(ss)", USBCONFIG_DBUS_INTERFACE, "CurrentState"),
-    G_DBUS_CALL_FLAGS_NONE,
-    -1,
-    NULL,
-    &error
-  );
-
-  if (error) {
-    g_debug ("Error calling method: %s\n", error->message);
-    g_clear_error (&error);
-    g_object_unref (usbconfig_proxy);
-    return NULL;
-  }
-
-  if (result) {
-    GVariant *state_variant;
-    g_variant_get (result, "(v)", &state_variant);
-    current_state = g_strdup (g_variant_get_string (state_variant, NULL));
-    g_variant_unref (state_variant);
-    g_variant_unref (result);
-  }
-
-  g_object_unref (usbconfig_proxy);
-  return current_state;
-}
-
 static void
 cc_usb_panel_select_iso (GtkWidget *widget, CcUsbPanel *self)
 {
@@ -349,10 +369,6 @@ cc_usb_panel_class_init (CcUsbPanelClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/org/gnome/control-center/usb/cc-usb-panel.ui");
-
-  gtk_widget_class_bind_template_child (widget_class,
-                                        CcUsbPanel,
-                                        mtp_enabled_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcUsbPanel,
@@ -396,32 +412,9 @@ cc_usb_panel_init (CcUsbPanel *self)
   gboolean mtp_supported = g_file_test ("/usr/lib/droidian/device/mtp-supported", G_FILE_TEST_EXISTS);
 
   if (!mtp_supported) {
-    gtk_widget_set_sensitive (GTK_WIDGET (self->mtp_enabled_switch), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_mtp), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_rndis), FALSE);
     gtk_widget_set_sensitive (GTK_WIDGET (self->usb_state_none), FALSE);
-  } else {
-    if (g_file_test ("/usr/bin/mtp-server", G_FILE_TEST_EXISTS)) {
-      g_signal_connect (G_OBJECT (self->mtp_enabled_switch), "state-set", G_CALLBACK (cc_usb_panel_enable_mtp), self);
-
-      gchar *mtp_output;
-      g_spawn_command_line_sync ("systemctl --user is-active mtp-server", &mtp_output, NULL, NULL, NULL);
-
-      if (g_str_has_prefix (mtp_output, "active")) {
-        g_signal_handlers_block_by_func (self->mtp_enabled_switch, cc_usb_panel_enable_mtp, self);
-        gtk_switch_set_state (GTK_SWITCH (self->mtp_enabled_switch), TRUE);
-        gtk_switch_set_active (GTK_SWITCH (self->mtp_enabled_switch), TRUE);
-        g_signal_handlers_unblock_by_func (self->mtp_enabled_switch, cc_usb_panel_enable_mtp, self);
-      } else {
-        g_signal_handlers_block_by_func (self->mtp_enabled_switch, cc_usb_panel_enable_mtp, self);
-        gtk_switch_set_state (GTK_SWITCH (self->mtp_enabled_switch), FALSE);
-        gtk_switch_set_active (GTK_SWITCH (self->mtp_enabled_switch), FALSE);
-        g_signal_handlers_unblock_by_func (self->mtp_enabled_switch, cc_usb_panel_enable_mtp, self);
-      }
-
-      g_free (mtp_output);
-    } else
-      gtk_widget_set_sensitive (GTK_WIDGET (self->mtp_enabled_switch), FALSE);
   }
 
   char *current_state = usb_get_current_state ();

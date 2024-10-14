@@ -11,7 +11,8 @@ i18n.merge_file(
 )
 
 sources = files(
-  'cc-waydroid-panel.c'
+  'cc-waydroid-panel.c',
+  'cc-systemd-service-ext.c',
 )
 
 resource_data = files(

@@ -8,6 +8,9 @@
 #include "cc-waydroid-resources.h"
 #include "cc-util.h"
 
+#include "panels/nfc/cc-systemd-service.h"
+#include "cc-systemd-service-ext.h"
+
 #define WAYDROID_CONTAINER_DBUS_NAME          "id.waydro.Container"
 #define WAYDROID_CONTAINER_DBUS_PATH          "/ContainerManager"
 #define WAYDROID_CONTAINER_DBUS_INTERFACE     "id.waydro.ContainerManager"
@@ -16,6 +19,8 @@
 #define WAYDROID_SESSION_DBUS_PATH          "/SessionManager"
 #define WAYDROID_SESSION_DBUS_INTERFACE     "id.waydro.SessionManager"
 
+#define WAYDROID_NOTIFICATION_CLIENT_SERVICE  "waydroid-notification-client.service"
+
 struct _CcWaydroidPanel {
   CcPanel            parent;
   AdwToastOverlay  *toast_overlay;
@@ -23,6 +28,7 @@ struct _CcWaydroidPanel {
   GtkWidget        *waydroid_autostart_switch;
   GtkWidget        *waydroid_shared_folder_switch;
   GtkWidget        *waydroid_nfc_switch;
+  GtkWidget        *waydroid_notification_switch;
   GtkWidget        *waydroid_ip_label;
   GtkWidget        *waydroid_vendor_label;
   GtkWidget        *waydroid_version_label;
@@ -49,6 +55,9 @@ struct _CcWaydroidPanel {
   gchar            *waydroid_version_output;
 
   gboolean         refreshing;
+  gboolean         waydroid_notification_active;
+  gboolean         waydroid_nfc_active;
+  gboolean         waydroid_shared_folder_enabled;
 };
 
 G_DEFINE_TYPE (CcWaydroidPanel, cc_waydroid_panel, CC_TYPE_PANEL)
@@ -780,6 +789,69 @@ is_mounted (const char *path)
   return found;
 }
 
+static void
+cc_waydroid_panel_enable_notification (CcWaydroidPanel *self, gboolean state)
+{
+  GError *error = NULL;
+
+  if (!state) {
+    cc_stop_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE, G_BUS_TYPE_SESSION, &error);
+    cc_mask_user_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE);
+  } else {
+    cc_start_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE, G_BUS_TYPE_SESSION, &error);
+    cc_unmask_user_service (WAYDROID_NOTIFICATION_CLIENT_SERVICE);
+  }
+
+  if (error != NULL) {
+    g_printerr ("Failed to toggle notification client service: %s\n", error->message);
+    g_error_free (error);
+  }
+}
+
+static void
+cc_waydroid_panel_nfc (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  waydroid_toggle_nfc ();
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), state);
+}
+
+static void
+cc_waydroid_panel_notification (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  cc_waydroid_panel_enable_notification (self, state);
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_notification_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_notification_switch), state);
+}
+
+static void
+cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  if (state) {
+    system ("touch ~/.android_enable");
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+  } else {
+    system ("rm -f ~/.android_enable");
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+  }
+}
+
+static void
+cc_waydroid_panel_shared_folder (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
+{
+  if (state) {
+    waydroid_mount_shared ();
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
+  } else {
+    waydroid_umount_shared ();
+    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
+  }
+}
+
 static gboolean
 update_ip_idle (gpointer user_data)
 {
@@ -1080,6 +1152,102 @@ update_waydroid_version_threaded (CcWaydroidPanel *self)
   g_thread_new ("update_waydroid_version", update_waydroid_version, self);
 }
 
+static gboolean
+check_nfc_idle (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+
+  g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), self->waydroid_nfc_active);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), self->waydroid_nfc_active);
+  g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer
+check_waydroid_nfc (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+
+  self->waydroid_nfc_active = waydroid_get_nfc_status ();
+
+  g_idle_add (check_nfc_idle, self);
+
+  return NULL;
+}
+
+static void
+check_waydroid_nfc_threaded (CcWaydroidPanel *self)
+{
+  g_thread_new ("check_waydroid_nfc", check_waydroid_nfc, self);
+}
+
+static gboolean
+check_notification_idle (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+
+  g_signal_handlers_block_by_func (self->waydroid_notification_switch, cc_waydroid_panel_notification, self);
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_notification_switch), self->waydroid_notification_active);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_notification_switch), self->waydroid_notification_active);
+  g_signal_handlers_unblock_by_func (self->waydroid_notification_switch, cc_waydroid_panel_notification, self);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer
+check_waydroid_notification (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+
+  self->waydroid_notification_active = cc_is_service_active (WAYDROID_NOTIFICATION_CLIENT_SERVICE, G_BUS_TYPE_SESSION);
+
+  g_idle_add (check_notification_idle, self);
+
+  return NULL;
+}
+
+static void
+check_waydroid_notification_threaded (CcWaydroidPanel *self)
+{
+  g_thread_new ("check_waydroid_notification", check_waydroid_notification, self);
+}
+
+static gboolean
+check_shared_folder_idle (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+
+  g_signal_handlers_block_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), self->waydroid_shared_folder_enabled);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), self->waydroid_shared_folder_enabled);
+  g_signal_handlers_unblock_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
+
+  return G_SOURCE_REMOVE;
+}
+
+static gpointer
+check_waydroid_shared_folder (gpointer user_data)
+{
+  CcWaydroidPanel *self = (CcWaydroidPanel *) user_data;
+
+  const gchar *home_dir = g_get_home_dir ();
+  gchar *android_dir_path = g_strdup_printf ("%s/Android", home_dir);
+  self->waydroid_shared_folder_enabled = is_mounted (android_dir_path);
+  g_free (android_dir_path);
+
+  g_idle_add (check_shared_folder_idle, self);
+
+  return NULL;
+}
+
+static void
+check_waydroid_shared_folder_threaded (CcWaydroidPanel *self)
+{
+  g_thread_new ("check_waydroid_shared_folder", check_waydroid_shared_folder, self);
+}
+
 static void
 update_waydroid_info (CcWaydroidPanel *self)
 {
@@ -1087,6 +1255,9 @@ update_waydroid_info (CcWaydroidPanel *self)
   update_waydroid_vendor_threaded (self);
   update_waydroid_version_threaded (self);
   update_app_list_threaded (self);
+  check_waydroid_notification_threaded (self);
+  check_waydroid_nfc_threaded (self);
+  check_waydroid_shared_folder_threaded (self);
 }
 
 static gboolean
@@ -1211,14 +1382,6 @@ cc_waydroid_factory_reset_threaded (GtkWidget *widget, CcWaydroidPanel *self)
 }
 
 static void
-cc_waydroid_panel_nfc (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
-{
-  waydroid_toggle_nfc ();
-  gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), state);
-  gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), state);
-}
-
-static void
 set_widgets_sensitive (gboolean sensitive, ...)
 {
   va_list args;
@@ -1245,6 +1408,7 @@ enable_idle (gpointer data)
                          GTK_WIDGET (self->store_button),
                          GTK_WIDGET (self->refresh_app_list_button),
                          GTK_WIDGET (self->waydroid_nfc_switch),
+                         GTK_WIDGET (self->waydroid_notification_switch),
                          GTK_WIDGET (self->clear_app_data_button),
                          GTK_WIDGET (self->kill_app_button),
                          NULL);
@@ -1262,18 +1426,6 @@ enable_idle (gpointer data)
   g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_kill_app), self);
 
   g_idle_add (update_waydroid_info_idle, self);
-
-  if (waydroid_get_nfc_status ()) {
-    g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
-    g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-  } else {
-    g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
-    g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-  }
 
   return G_SOURCE_REMOVE;
 }
@@ -1323,6 +1475,7 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
                            GTK_WIDGET (self->store_button),
                            GTK_WIDGET (self->refresh_app_list_button),
                            GTK_WIDGET (self->waydroid_nfc_switch),
+                           GTK_WIDGET (self->waydroid_notification_switch),
                            GTK_WIDGET (self->clear_app_data_button),
                            GTK_WIDGET (self->kill_app_button),
                            NULL);
@@ -1335,34 +1488,6 @@ cc_waydroid_panel_enable_waydroid (GtkSwitch *widget, gboolean state, CcWaydroid
   }
 
   return FALSE;
-}
-
-static void
-cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
-{
-  if (state) {
-    system ("touch ~/.android_enable");
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
-  } else {
-    system ("rm -f ~/.android_enable");
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
-  }
-}
-
-static void
-cc_waydroid_panel_shared_folder (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
-{
-  if (state) {
-    waydroid_mount_shared ();
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
-  } else {
-    waydroid_umount_shared ();
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
-  }
 }
 
 static void
@@ -1399,6 +1524,10 @@ cc_waydroid_panel_class_init (CcWaydroidPanelClass *klass)
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
                                         waydroid_nfc_switch);
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcWaydroidPanel,
+                                        waydroid_notification_switch);
 
   gtk_widget_class_bind_template_child (widget_class,
                                         CcWaydroidPanel,
@@ -1463,12 +1592,17 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
   self->waydroid_vendor_output = NULL;
   self->waydroid_version_output = NULL;
   self->apps = NULL;
+  self->waydroid_notification_active = FALSE;
+  self->waydroid_nfc_active = FALSE;
+  self->waydroid_shared_folder_enabled = FALSE;
+  self->refreshing = FALSE;
 
   if (g_file_test ("/usr/bin/waydroid", G_FILE_TEST_EXISTS)) {
     g_signal_connect (G_OBJECT (self->waydroid_enabled_switch), "state-set", G_CALLBACK (cc_waydroid_panel_enable_waydroid), self);
     g_signal_connect (G_OBJECT (self->waydroid_autostart_switch), "state-set", G_CALLBACK (cc_waydroid_panel_autostart), self);
     g_signal_connect (G_OBJECT (self->waydroid_shared_folder_switch), "state-set", G_CALLBACK (cc_waydroid_panel_shared_folder), self);
     g_signal_connect (G_OBJECT (self->waydroid_nfc_switch), "state-set", G_CALLBACK (cc_waydroid_panel_nfc), self);
+    g_signal_connect (G_OBJECT (self->waydroid_notification_switch), "state-set", G_CALLBACK (cc_waydroid_panel_notification), self);
     g_signal_connect (G_OBJECT (self->factory_reset_button), "clicked", G_CALLBACK (cc_waydroid_factory_reset_threaded), self);
 
     gchar *file_path = g_build_filename (g_get_home_dir (), ".android_enable", NULL);
@@ -1506,38 +1640,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
       g_signal_connect (G_OBJECT (self->clear_app_data_button), "clicked", G_CALLBACK (cc_waydroid_panel_clear_app_data), self);
       g_signal_connect (G_OBJECT (self->kill_app_button), "clicked", G_CALLBACK (cc_waydroid_panel_kill_app), self);
 
-      const gchar *home_dir = g_get_home_dir();
-      gchar *android_dir_path = g_strdup_printf("%s/Android", home_dir);
-      if (is_mounted (android_dir_path)) {
-        g_signal_handlers_block_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
-        gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
-        gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), TRUE);
-        g_signal_handlers_unblock_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
-      } else {
-        g_signal_handlers_block_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
-        gtk_switch_set_state (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
-        gtk_switch_set_active (GTK_SWITCH (self->waydroid_shared_folder_switch), FALSE);
-        g_signal_handlers_unblock_by_func (self->waydroid_shared_folder_switch, cc_waydroid_panel_shared_folder, self);
-      }
-
-      g_free (android_dir_path);
-
-      if (waydroid_get_nfc_status ()) {
-        g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-        gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
-        gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), TRUE);
-        g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-      } else {
-        g_signal_handlers_block_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-        gtk_switch_set_state (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
-        gtk_switch_set_active (GTK_SWITCH (self->waydroid_nfc_switch), FALSE);
-        g_signal_handlers_unblock_by_func (self->waydroid_nfc_switch, cc_waydroid_panel_nfc, self);
-      }
-
-      update_waydroid_ip_threaded (self);
-      update_waydroid_vendor_threaded (self);
-      update_app_list_threaded (self);
-      update_waydroid_version_threaded (self);
+      g_idle_add (update_waydroid_info_idle, self);
     } else {
       g_signal_handlers_block_by_func (self->waydroid_enabled_switch, cc_waydroid_panel_enable_waydroid, self);
       gtk_switch_set_state (GTK_SWITCH (self->waydroid_enabled_switch), FALSE);
@@ -1548,6 +1651,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
 
       set_widgets_sensitive (FALSE,
                              GTK_WIDGET (self->waydroid_nfc_switch),
+                             GTK_WIDGET (self->waydroid_notification_switch),
                              GTK_WIDGET (self->launch_app_button),
                              GTK_WIDGET (self->remove_app_button),
                              GTK_WIDGET (self->install_app_button),
@@ -1569,6 +1673,7 @@ cc_waydroid_panel_init (CcWaydroidPanel *self)
                            GTK_WIDGET (self->waydroid_autostart_switch),
                            GTK_WIDGET (self->waydroid_shared_folder_switch),
                            GTK_WIDGET (self->waydroid_nfc_switch),
+                           GTK_WIDGET (self->waydroid_notification_switch),
                            GTK_WIDGET (self->launch_app_button),
                            GTK_WIDGET (self->remove_app_button),
                            GTK_WIDGET (self->install_app_button),

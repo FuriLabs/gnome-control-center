@@ -827,15 +827,37 @@ cc_waydroid_panel_notification (GtkSwitch *widget, gboolean state, CcWaydroidPan
 static void
 cc_waydroid_panel_autostart (GtkSwitch *widget, gboolean state, CcWaydroidPanel *self)
 {
+  const gchar *home_dir = g_get_home_dir ();
+  gchar *filepath = g_build_filename (home_dir, ".android_enable", NULL);
+  GFile *file = g_file_new_for_path (filepath);
+  GError *error = NULL;
+
+  g_signal_handlers_block_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
+
   if (state) {
-    system ("touch ~/.android_enable");
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), TRUE);
+    GFileOutputStream *output_stream = g_file_create (file, G_FILE_CREATE_NONE, NULL, &error);
+    if (output_stream != NULL) {
+      g_output_stream_close (G_OUTPUT_STREAM (output_stream), NULL, NULL);
+      g_object_unref (output_stream);
+    } else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+      g_warning ("Error creating %s: %s", filepath, error->message);
+      g_clear_error (&error);
+    }
   } else {
-    system ("rm -f ~/.android_enable");
-    gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
-    gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), FALSE);
+    if (!g_file_delete (file, NULL, &error)) {
+      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND))
+        g_warning ("Error deleting %s: %s", filepath, error->message);
+      g_clear_error (&error);
+    }
   }
+
+  gtk_switch_set_state (GTK_SWITCH (self->waydroid_autostart_switch), state);
+  gtk_switch_set_active (GTK_SWITCH (self->waydroid_autostart_switch), state);
+
+  g_signal_handlers_unblock_by_func (self->waydroid_autostart_switch, cc_waydroid_panel_autostart, self);
+
+  g_object_unref (file);
+  g_free (filepath);
 }
 
 static void

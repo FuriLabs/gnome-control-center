@@ -18,7 +18,10 @@
 
 struct _CcNfcPanel {
   CcPanel            parent;
+  GtkStack          *stack;
   GtkWidget         *nfc_enabled_switch;
+  GtkWidget         *content_box;
+  AdwStatusPage     *status_page;
 };
 
 G_DEFINE_TYPE (CcNfcPanel, cc_nfc_panel, CC_TYPE_PANEL)
@@ -126,9 +129,19 @@ cc_nfc_panel_class_init (CcNfcPanelClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/org/gnome/control-center/nfc/cc-nfc-panel.ui");
+
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcNfcPanel,
+                                        stack);
   gtk_widget_class_bind_template_child (widget_class,
                                         CcNfcPanel,
                                         nfc_enabled_switch);
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcNfcPanel,
+                                        content_box);
+  gtk_widget_class_bind_template_child (widget_class,
+                                        CcNfcPanel,
+                                        status_page);
 }
 
 static void
@@ -137,25 +150,27 @@ cc_nfc_panel_init (CcNfcPanel *self)
   g_resources_register (cc_nfc_get_resource ());
   gtk_widget_init_template (GTK_WIDGET (self));
 
-  gboolean waydroid_active = FALSE;
-  waydroid_active = ping_waydroid ();
-  if (!waydroid_active) {
-    if (g_file_test ("/usr/sbin/nfcd", G_FILE_TEST_EXISTS)) {
-      g_signal_connect_swapped (G_OBJECT (self->nfc_enabled_switch), "state-set", G_CALLBACK (cc_nfc_panel_enable_nfc), self);
+  gboolean waydroid_active = ping_waydroid ();
+  gboolean nfcd_installed = g_file_test ("/usr/sbin/nfcd", G_FILE_TEST_EXISTS);
 
-      gboolean active = FALSE;
-      active = cc_is_service_active (NFCD_SERVICE, G_BUS_TYPE_SYSTEM);
-      g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-      gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), active);
-      gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), active);
-      g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
-    } else {
-      g_debug ("NFCd is not installed, setting sensitivity to false");
-      gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
-    }
+  if (waydroid_active) {
+    gtk_stack_set_visible_child_name (GTK_STACK (self->stack), "status");
+    adw_status_page_set_icon_name (self->status_page, "dialog-warning-symbolic");
+    adw_status_page_set_title (self->status_page, ("NFC Unavailable"));
+    adw_status_page_set_description (self->status_page, ("NFC is not available while Android is running"));
+  } else if (!nfcd_installed) {
+    gtk_stack_set_visible_child_name (GTK_STACK (self->stack), "status");
+    adw_status_page_set_icon_name (self->status_page, "dialog-warning-symbolic");
+    adw_status_page_set_title (self->status_page, ("NFC Not Installed"));
+    adw_status_page_set_description (self->status_page, ("The NFC service is not installed on this system"));
   } else {
-    g_debug ("Android is running, setting sensitivity to false");
-    gtk_widget_set_sensitive (GTK_WIDGET (self->nfc_enabled_switch), FALSE);
+    g_signal_connect_swapped (G_OBJECT (self->nfc_enabled_switch), "state-set", G_CALLBACK (cc_nfc_panel_enable_nfc), self);
+
+    gboolean active = cc_is_service_active (NFCD_SERVICE, G_BUS_TYPE_SYSTEM);
+    g_signal_handlers_block_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
+    gtk_switch_set_state (GTK_SWITCH (self->nfc_enabled_switch), active);
+    gtk_switch_set_active (GTK_SWITCH (self->nfc_enabled_switch), active);
+    g_signal_handlers_unblock_by_func (self->nfc_enabled_switch, cc_nfc_panel_enable_nfc, self);
   }
 }
 

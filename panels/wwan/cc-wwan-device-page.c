@@ -38,6 +38,7 @@
 #include "cc-wwan-device-page.h"
 #include "cc-wwan-mode-dialog.h"
 #include "cc-wwan-network-dialog.h"
+#include "cc-wwan-mms-dialog.h"
 #include "cc-wwan-resources.h"
 #include "cc-wwan-sim-lock-dialog.h"
 
@@ -94,6 +95,8 @@ struct _CcWwanDevicePage {
     gboolean is_self_change;
     gboolean is_retry;
 
+    CcListRow *mms_settings_row;
+    GtkWindow *mms_dialog;
     CcListRow *stk_row;
 };
 
@@ -153,6 +156,53 @@ wwan_data_show_apn_dialog (CcWwanDevicePage *self)
     g_signal_connect_object (dialog, "close-attempt", G_CALLBACK (wwan_apn_dialog_closed_cb), self, G_CONNECT_SWAPPED);
     adw_dialog_present (dialog, GTK_WIDGET (self));
     return dialog;
+}
+
+static gboolean
+wwan_mms_dialog_closed_cb (CcWwanDevicePage *self)
+{
+    if (gtk_widget_in_destruction (GTK_WIDGET (self)))
+        return FALSE;
+
+    g_object_set_data (G_OBJECT (self->mms_dialog), "row", NULL);
+
+    if (self->mms_dialog) {
+        GtkWidget *dialog = GTK_WIDGET (self->mms_dialog);
+        self->mms_dialog = NULL;
+        gtk_window_destroy (GTK_WINDOW (dialog));
+    }
+
+    return FALSE;
+}
+
+static void
+wwan_data_show_mms_dialog (CcWwanDevicePage *self)
+{
+    GtkWindow *top_level;
+    const gchar *port_name;
+
+    g_return_if_fail (CC_IS_WWAN_DEVICE_PAGE (self));
+
+    top_level = GTK_WINDOW (gtk_widget_get_root (GTK_WIDGET (self)));
+
+    port_name = cc_wwan_device_get_primary_port (self->device);
+    if (!port_name) {
+        g_warning ("Could not get primary port from device");
+        return;
+    }
+
+    if (self->mms_dialog) {
+        GtkWidget *dialog = GTK_WIDGET (self->mms_dialog);
+        self->mms_dialog = NULL;
+        gtk_window_destroy (GTK_WINDOW (dialog));
+    }
+
+    self->mms_dialog = cc_wwan_mms_dialog_new (top_level, port_name);
+    g_signal_connect_object (self->mms_dialog, "unmap",
+                             G_CALLBACK (wwan_mms_dialog_closed_cb),
+                             self, G_CONNECT_SWAPPED);
+
+    gtk_widget_set_visible (GTK_WIDGET (self->mms_dialog), TRUE);
 }
 
 static void
@@ -361,6 +411,8 @@ wwan_advanced_settings_activated_cb (CcWwanDevicePage *self, CcListRow *row)
         adw_dialog_present (dialog, GTK_WIDGET (top_level));
     } else if (row == self->apn_settings_row) {
         wwan_data_show_apn_dialog (self);
+    } else if (row == self->mms_settings_row) {
+      wwan_data_show_mms_dialog (self);
     } else if (row == self->stk_row) {
         cc_wwan_open_stk_tool (self);
     } else if (GTK_WIDGET (row) == GTK_WIDGET (self->sim_slot_row)) {
@@ -525,6 +577,7 @@ cc_wwan_device_page_dispose (GObject *object)
     g_clear_pointer (&self->network_dialog, gtk_window_destroy);
     g_clear_pointer (&self->sim_lock_dialog, gtk_window_destroy);
     g_clear_pointer (&self->sim_slot_dialog, gtk_window_destroy);
+    g_clear_pointer (&self->mms_dialog, gtk_window_destroy);
 
     g_cancellable_cancel (self->cancellable);
 
@@ -574,6 +627,7 @@ cc_wwan_device_page_class_init (CcWwanDevicePageClass *klass)
     gtk_widget_class_bind_template_callback (widget_class, wwan_network_settings_activated_cb);
     gtk_widget_class_bind_template_callback (widget_class, wwan_advanced_settings_activated_cb);
     gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, stk_row);
+    gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, mms_settings_row);
 }
 
 static void

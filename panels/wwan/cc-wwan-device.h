@@ -99,4 +99,5 @@ guint cc_wwan_device_get_primary_sim_slot (CcWwanDevice *self);
 gchar *cc_wwan_device_get_ims_registered (CcWwanDevice *self);
 gchar *cc_wwan_device_get_ims_voice_capable (CcWwanDevice *self);
 gchar *cc_wwan_device_get_ims_sms_capable (CcWwanDevice *self);
+const gchar *cc_wwan_device_get_primary_port (CcWwanDevice *self);
 G_END_DECLS

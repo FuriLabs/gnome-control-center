@@ -39,6 +39,7 @@
 #include "cc-wwan-mode-dialog.h"
 #include "cc-wwan-network-dialog.h"
 #include "cc-wwan-mms-dialog.h"
+#include "cc-wwan-bands-dialog.h"
 #include "cc-wwan-resources.h"
 #include "cc-wwan-sim-lock-dialog.h"
 
@@ -97,6 +98,8 @@ struct _CcWwanDevicePage {
 
     CcListRow *mms_settings_row;
     GtkWindow *mms_dialog;
+    CcListRow *enabled_bands_row;
+    GtkWindow *bands_dialog;
     CcListRow *stk_row;
 };
 
@@ -388,6 +391,11 @@ wwan_network_settings_activated_cb (CcWwanDevicePage *self, CcListRow *row)
             self->network_dialog = cc_wwan_network_dialog_new (top_level, self->device);
 
         dialog = GTK_WIDGET (self->network_dialog);
+    } else if (row == self->enabled_bands_row) {
+        if (!self->bands_dialog)
+            self->bands_dialog = cc_wwan_bands_dialog_new (top_level, self->device);
+
+        dialog = GTK_WIDGET (self->bands_dialog);
     } else {
         return;
     }
@@ -578,6 +586,7 @@ cc_wwan_device_page_dispose (GObject *object)
     g_clear_pointer (&self->sim_lock_dialog, gtk_window_destroy);
     g_clear_pointer (&self->sim_slot_dialog, gtk_window_destroy);
     g_clear_pointer (&self->mms_dialog, gtk_window_destroy);
+    g_clear_pointer (&self->bands_dialog, gtk_window_destroy);
 
     g_cancellable_cancel (self->cancellable);
 
@@ -628,6 +637,7 @@ cc_wwan_device_page_class_init (CcWwanDevicePageClass *klass)
     gtk_widget_class_bind_template_callback (widget_class, wwan_advanced_settings_activated_cb);
     gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, stk_row);
     gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, mms_settings_row);
+    gtk_widget_class_bind_template_child (widget_class, CcWwanDevicePage, enabled_bands_row);
 }
 
 static void

@@ -29,10 +29,11 @@ blueprints = custom_target(
 )
 
 sources = files(
+  'cc-batman-config-control.c',
   'cc-battery-row.c',
   'cc-power-panel.c',
   'cc-power-profile-row.c',
-  'cc-power-profile-info-row.c'
+  'cc-power-profile-info-row.c',
 )
 
 sources += gnome.compile_resources(

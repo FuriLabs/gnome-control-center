@@ -132,7 +132,7 @@ libadwaita_version = '>= 1.8.alpha'
 gtk_version = '>= 4.23.0'
 goa_req_version = '>= 3.51.0'
 pulse_req_version = '>= 2.0'
-malcontent_version = '>= 0.14.alpha'
+malcontent_version = '>= 0.13'
 
 gtk_dep = dependency(
   'gtk4',

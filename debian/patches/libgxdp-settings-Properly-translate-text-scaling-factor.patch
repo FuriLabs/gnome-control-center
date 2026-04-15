@@ -1,0 +1,44 @@
+From: Matthias Clasen <mclasen@redhat.com>
+Date: Tue, 2 Dec 2025 13:36:21 -0500
+Subject: libgxdp: settings: Properly translate text-scaling-factor
+
+The gtk-xft-dpi property is an integer in units of 1024 * dpi,
+the text scaling factor is just a double. Do the necessary
+conversion.
+
+Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/3383
+---
+ subprojects/libgxdp/src/gxdp-wayland.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/subprojects/libgxdp/src/gxdp-wayland.c b/subprojects/libgxdp/src/gxdp-wayland.c
+index ba5364f..3ab9340 100644
+--- a/subprojects/libgxdp/src/gxdp-wayland.c
++++ b/subprojects/libgxdp/src/gxdp-wayland.c
+@@ -105,6 +105,17 @@ get_high_contrast (GValue   *value,
+   return TRUE;
+ }
+ 
++static gboolean
++get_xft_dpi (GValue   *value,
++             GVariant *variant,
++             gpointer  user_data)
++{
++  g_value_set_int (value,
++                   g_variant_get_double (variant) * 96 * 1024);
++
++  return TRUE;
++}
++
+ #define MAX_KEYS 20
+ 
+ static void
+@@ -130,7 +141,7 @@ init_settings (void)
+         { "enable-animations", "gtk-enable-animations" },
+         { "gtk-enable-primary-paste", "gtk-enable-primary-paste" },
+         { "overlay-scrolling", "gtk-overlay-scrolling" },
+-        { "text-scaling-factor", "gtk-xft-dpi" },
++        { "text-scaling-factor", "gtk-xft-dpi", get_xft_dpi },
+       },
+     },
+     {

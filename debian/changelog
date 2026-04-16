@@ -1,3 +1,15 @@
+gnome-control-center (1:50.0-0ubuntu5) resolute; urgency=medium
+
+  * d/p/debian, d/control: Set keyboard configuration the debian way
+    (LP: #2101934)
+  * d/p: Fix global-shortcuts portal provider for snaps
+  * d/p: Fix missing text in global-shortcuts portal dialog
+  * d/p: Disallow changing password for non-local user.
+    This is not working for authd users yet, providing a bad user experience.
+    (LP: #2148575)
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 16 Apr 2026 16:36:35 +0200
+
 gnome-control-center (1:50.0-0ubuntu4) resolute; urgency=medium
 
   * Replace keyring patch with the one that got forwarded upstream.

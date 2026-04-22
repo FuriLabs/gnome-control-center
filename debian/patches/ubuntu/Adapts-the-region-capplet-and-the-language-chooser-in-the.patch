@@ -39,9 +39,9 @@ Subject: Adapts the region capplet and the language chooser in the user
 ---
  panels/common/cc-common-language.c    | 137 ++++++++++++++++++++++++++++------
  panels/common/cc-common-language.h    |   4 +
- panels/system/region/cc-region-page.c | 117 ++++++++++++++++++++++++-----
+ panels/system/region/cc-region-page.c | 118 ++++++++++++++++++++++++-----
  panels/system/users/cc-user-page.c    |   5 ++
- 4 files changed, 222 insertions(+), 41 deletions(-)
+ 4 files changed, 222 insertions(+), 42 deletions(-)
 
 diff --git a/panels/common/cc-common-language.c b/panels/common/cc-common-language.c
 index 9357c3e..c923d82 100644
@@ -269,10 +269,16 @@ index 1f578b7..2e5a446 100644
 +
  G_END_DECLS
 diff --git a/panels/system/region/cc-region-page.c b/panels/system/region/cc-region-page.c
-index c183fab..6b65435 100644
+index c183fab..4c8e037 100644
 --- a/panels/system/region/cc-region-page.c
 +++ b/panels/system/region/cc-region-page.c
-@@ -252,13 +252,23 @@ set_localed_locale (CcRegionPage *self)
+@@ -247,20 +247,29 @@ set_localed_locale (CcRegionPage *self)
+ {
+         g_autoptr(GVariantBuilder) b = NULL;
+         g_autofree gchar *lang_value = NULL;
++        g_autofree gchar *language_value = NULL;
+         g_autofree gchar *time_value = NULL;
+         g_autofree gchar *numeric_value = NULL;
          g_autofree gchar *monetary_value = NULL;
          g_autofree gchar *measurement_value = NULL;
          g_autofree gchar *paper_value = NULL;
@@ -282,22 +288,23 @@ index c183fab..6b65435 100644
 +        g_autofree gchar *identification_value = NULL;
          const gchar *region = self->system_region;
 +        g_autofree gchar *lang = NULL;
-+
-+        cc_common_language_get_locale (self->system_language, &lang);
-+        lang_value = g_strconcat ("LANG=", lang, NULL);
-+        g_variant_builder_add (b, "s", lang_value);
-+        g_free (lang_value);
  
          if (region == NULL)
                  region = self->system_language;
  
          b = g_variant_builder_new (G_VARIANT_TYPE ("as"));
 -        lang_value = g_strconcat ("LANG=", self->system_language, NULL);
-+        lang_value = g_strconcat ("LANGUAGE=", self->system_language, NULL);
-         g_variant_builder_add (b, "s", lang_value);
+-        g_variant_builder_add (b, "s", lang_value);
  
++        cc_common_language_get_locale (self->system_language, &lang);
++        lang_value = g_strconcat ("LANG=", lang, NULL);
++        g_variant_builder_add (b, "s", lang_value);
++        language_value = g_strconcat ("LANGUAGE=", self->system_language, NULL);
++        g_variant_builder_add (b, "s", language_value);
          time_value = g_strconcat ("LC_TIME=", region, NULL);
-@@ -271,6 +281,14 @@ set_localed_locale (CcRegionPage *self)
+         g_variant_builder_add (b, "s", time_value);
+         numeric_value = g_strconcat ("LC_NUMERIC=", region, NULL);
+@@ -271,6 +280,14 @@ set_localed_locale (CcRegionPage *self)
          g_variant_builder_add (b, "s", measurement_value);
          paper_value = g_strconcat ("LC_PAPER=", region, NULL);
          g_variant_builder_add (b, "s", paper_value);
@@ -312,7 +319,7 @@ index c183fab..6b65435 100644
  
          g_dbus_proxy_call (self->localed,
                             "SetLocale",
-@@ -310,6 +328,8 @@ update_language (CcRegionPage   *self,
+@@ -310,6 +327,8 @@ update_language (CcRegionPage   *self,
                   CcLocaleTarget  target,
                   const gchar    *language)
  {
@@ -321,7 +328,7 @@ index c183fab..6b65435 100644
          switch (target) {
          case USER:
                  if (g_strcmp0 (language, self->language) == 0)
-@@ -344,6 +364,40 @@ set_system_region (CcRegionPage *self,
+@@ -344,6 +363,40 @@ set_system_region (CcRegionPage *self,
          set_localed_locale (self);
  }
  
@@ -362,7 +369,7 @@ index c183fab..6b65435 100644
  static void
  update_region (CcRegionPage   *self,
                 CcLocaleTarget  target,
-@@ -355,8 +409,10 @@ update_region (CcRegionPage   *self,
+@@ -355,8 +408,10 @@ update_region (CcRegionPage   *self,
                          return;
                  if (region == NULL || region[0] == '\0')
                          g_settings_reset (self->locale_settings, KEY_REGION);
@@ -374,7 +381,7 @@ index c183fab..6b65435 100644
  
                  set_accountservice_languages (self);
  
-@@ -389,7 +445,8 @@ language_response (CcRegionPage *self)
+@@ -389,7 +444,8 @@ language_response (CcRegionPage *self)
          update_language (self, target, language);
  
          /* Keep format strings consistent with the user's language */
@@ -384,7 +391,7 @@ index c183fab..6b65435 100644
  
          adw_dialog_close (ADW_DIALOG (self->language_chooser));
  }
-@@ -539,15 +596,19 @@ static void
+@@ -539,15 +595,19 @@ static void
  update_language_from_user (CcRegionPage *self)
  {
          const gchar *language = NULL;
@@ -408,7 +415,7 @@ index c183fab..6b65435 100644
          update_user_language_row (self);
  }
  
-@@ -555,7 +616,7 @@ static void
+@@ -555,7 +615,7 @@ static void
  update_region_from_setting (CcRegionPage *self)
  {
          g_free (self->region);
@@ -417,7 +424,7 @@ index c183fab..6b65435 100644
          update_user_region_row (self);
  }
  
-@@ -645,6 +706,16 @@ set_login_button_visibility (CcRegionPage *self)
+@@ -645,6 +705,16 @@ set_login_button_visibility (CcRegionPage *self)
  
  /* Callbacks */
  
@@ -434,7 +441,7 @@ index c183fab..6b65435 100644
  static void
  on_localed_properties_changed (GDBusProxy    *localed_proxy,
                                 GVariant      *changed_properties,
-@@ -653,33 +724,43 @@ on_localed_properties_changed (GDBusProxy    *localed_proxy,
+@@ -653,33 +723,43 @@ on_localed_properties_changed (GDBusProxy    *localed_proxy,
  {
          g_autoptr(GVariant) v = NULL;
  

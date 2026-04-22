@@ -1,3 +1,10 @@
+gnome-control-center (1:50.0-0ubuntu6) resolute; urgency=medium
+
+  * d/p/u: Fix showing autostart setting for non-sandboxed apps (LP: #2149829)
+  * d/p/u: Fix setting LANG variable in localed (LP: #2149788)
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Wed, 22 Apr 2026 18:14:51 +0200
+
 gnome-control-center (1:50.0-0ubuntu5) resolute; urgency=medium
 
   * d/p/debian, d/control: Set keyboard configuration the debian way

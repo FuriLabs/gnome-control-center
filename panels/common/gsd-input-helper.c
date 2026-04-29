@@ -17,6 +17,8 @@
  *
  */
 
+#define IS_FURIOS 1
+
 #include "config.h"
 
 #include <string.h>
@@ -28,12 +30,20 @@
 #include "gsd-device-manager.h"
 #include "gsd-input-helper.h"
 
+#if IS_FURIOS
+static gboolean
+device_type_is_present (GsdDeviceType type)
+{
+    return TRUE;
+}
+#else
 static gboolean
 device_type_is_present (GsdDeviceType type)
 {
     g_autoptr(GList) l = gsd_device_manager_list_devices (gsd_device_manager_get (), type);
     return l != NULL;
 }
+#endif
 
 gboolean
 touchscreen_is_present (void)

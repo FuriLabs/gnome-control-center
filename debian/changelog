@@ -1,3 +1,13 @@
+gnome-control-center (1:50.0-0ubuntu6.1) resolute; urgency=medium
+
+  * d/p/u: Avoid resetting autostart toggle when changing app.
+    When loading an app page and setting the initial widget state for the
+    various toggles, we would be inadvertently changing the previous app's
+    autostart setting to the current app's autostart setting. (LP: #2151253)
+  * debian: Branch for ubuntu/resolute
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Wed, 06 May 2026 17:35:33 +0200
+
 gnome-control-center (1:50.0-0ubuntu6) resolute; urgency=medium
 
   * d/p/u: Fix showing autostart setting for non-sandboxed apps (LP: #2149829)

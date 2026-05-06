@@ -28,9 +28,9 @@ launcher.
 Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/3221
 ---
  panels/applications/cc-applications-panel.blp      |   8 +
- panels/applications/cc-applications-panel.c        | 417 ++++++++++++++++++++-
+ panels/applications/cc-applications-panel.c        | 418 ++++++++++++++++++++-
  .../gnome-applications-panel.desktop.in            |   2 +-
- 3 files changed, 423 insertions(+), 4 deletions(-)
+ 3 files changed, 424 insertions(+), 4 deletions(-)
 
 diff --git a/panels/applications/cc-applications-panel.blp b/panels/applications/cc-applications-panel.blp
 index e000d1e..f92ece4 100644
@@ -52,7 +52,7 @@ index e000d1e..f92ece4 100644
                title: _("Scr_eenshots");
                subtitle: _("Take pictures of the screen at any time");
 diff --git a/panels/applications/cc-applications-panel.c b/panels/applications/cc-applications-panel.c
-index ae28380..a44debe 100644
+index ae28380..1d7f1be 100644
 --- a/panels/applications/cc-applications-panel.c
 +++ b/panels/applications/cc-applications-panel.c
 @@ -55,6 +55,8 @@
@@ -420,7 +420,15 @@ index ae28380..a44debe 100644
        has_any |= set;
  
        gtk_widget_set_visible (GTK_WIDGET (self->background_row), FALSE);
-@@ -1659,6 +1960,90 @@ compare_rows (gconstpointer  a,
+@@ -1619,6 +1920,7 @@ update_panel (CcApplicationsPanel *self,
+   gtk_widget_set_visible (GTK_WIDGET (self->view_details_button),
+                           gnome_software_is_installed ());
+ 
++  g_clear_object (&self->current_app_info);
+   g_clear_pointer (&self->current_app_id, g_free);
+   g_clear_pointer (&self->current_portal_app_id, g_free);
+ 
+@@ -1659,6 +1961,90 @@ compare_rows (gconstpointer  a,
    return g_utf8_collate (key1, key2);
  }
  
@@ -511,7 +519,7 @@ index ae28380..a44debe 100644
  static void
  populate_applications (CcApplicationsPanel *self)
  {
-@@ -1671,8 +2056,31 @@ populate_applications (CcApplicationsPanel *self)
+@@ -1671,8 +2057,31 @@ populate_applications (CcApplicationsPanel *self)
        g_signal_handler_block (self->manager, self->app_filter_id);
  #endif
  
@@ -543,7 +551,7 @@ index ae28380..a44debe 100644
    for (l = infos; l; l = l->next)
      {
        GAppInfo *info = l->data;
-@@ -1908,12 +2316,13 @@ cc_applications_panel_finalize (GObject *object)
+@@ -1908,12 +2317,13 @@ cc_applications_panel_finalize (GObject *object)
    g_clear_object (&self->location_settings);
    g_clear_object (&self->privacy_settings);
    g_clear_object (&self->search_settings);
@@ -558,7 +566,7 @@ index ae28380..a44debe 100644
  
    G_OBJECT_CLASS (cc_applications_panel_parent_class)->finalize (object);
  }
-@@ -1987,6 +2396,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
+@@ -1987,6 +2397,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_name_label);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_search_entry);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, app_settings_page);
@@ -566,7 +574,7 @@ index ae28380..a44debe 100644
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, required_permissions_group);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, autorun_never_row);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, builtin_row);
-@@ -2031,6 +2441,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
+@@ -2031,6 +2442,7 @@ cc_applications_panel_class_init (CcApplicationsPanelClass *klass)
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, view_details_button);
    gtk_widget_class_bind_template_child (widget_class, CcApplicationsPanel, toast_overlay);
  

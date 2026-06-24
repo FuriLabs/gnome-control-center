@@ -1,3 +1,33 @@
+gnome-control-center (1:50.3-1ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge with Debian 1:50.3-1. Remaining changes:
+    + Add gnome-control-center-faces package to share with unity-control-center
+    + Install apport hook
+    + debian/control:
+      - Bump minimum malcontent version
+      - Build-Depend on libwhoopsie-preferences-dev
+      - Build-Depend on libinsights-dev
+      - Build-Depend on libdrm-dev
+      - Depend on language-selector-gnome & whoopsie-preferences
+      - Don't depend on desktop-base
+      - Recommend ibus
+      - Don't recommend libnss-myhostname since we use systemd-resolved
+      - Suggest instead of recommend gnome-user-share & realmd
+      - Suggest instead of depend on libjxl-gdk-pixbuf
+      - Suggest instead of recommend malcontent-gui
+    + debian/gnome-control-center-data.install,
+      debian/gnome-control-center-faces.install,
+      debian/control:
+      - Split 'faces' package, shared with unity-control-center
+    + debian/rules: Enable whoospie integration
+    + debian/rules: Enable insights integration
+    + debian/rules: set SSHD_SOCKET=ssh.socket via CPPFLAGS in debian/rules.
+    + Add misc patches
+  * d/p: Drop patches applied upstream
+  * d/p/u: Refresh patches
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Wed, 24 Jun 2026 16:03:50 +0200
+
 gnome-control-center (1:50.3-1) unstable; urgency=medium
 
   * New upstream release

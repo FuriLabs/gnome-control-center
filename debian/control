@@ -1,15 +1,15 @@
 Source: gnome-control-center
-Section: gnome
-Priority: optional
+Standards-Version: 4.7.4
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
 Uploaders: Jeremy Bícha <jbicha@ubuntu.com>,
            Laurent Bigonville <bigon@debian.org>,
-           Marco Trevisan (Treviño) <marco@ubuntu.com>
-Build-Depends: debhelper-compat (= 13),
+           Marco Trevisan (Treviño) <marco@ubuntu.com>,
+Section: gnome
+Build-Depends: debhelper-compat (= 14),
+               dh-sequence-gnome (>= 0.22.2),
                blueprint-compiler (>= 0.19.0),
                desktop-file-utils,
-               dh-sequence-gnome (>= 0.22.2),
                gnome-settings-daemon-dev (>= 48~rc),
                gobject-introspection (>= 1.80),
                gsettings-desktop-schemas-dev (>= 50~alpha),
@@ -17,7 +17,7 @@ Build-Depends: debhelper-compat (= 13),
                libaccountsservice-dev (>= 23.11.69),
                libadwaita-1-dev (>= 1.8~alpha),
                libcolord-dev,
-               libcolord-gtk4-dev (>= 0.1.24),
+               libcolord-gtk4-dev,
                libcups2-dev,
                libdrm-dev,
                libgcr-4-dev [linux-any],
@@ -33,7 +33,7 @@ Build-Depends: debhelper-compat (= 13),
                libgtk-4-dev (>= 4.21),
                libgtop2-dev,
                libgudev-1.0-dev [linux-any],
-               libhandy-1-dev (>= 1.2.0),
+               libhandy-1-dev,
                libibus-1.0-dev,
                libinsights-dev (>= 0.8.1),
                libjson-glib-dev,
@@ -41,7 +41,7 @@ Build-Depends: debhelper-compat (= 13),
                libmalcontent-0-dev (>= 0.14~alpha) [linux-any],
                libmm-glib-dev [linux-any],
                libnm-dev (>= 1.52.0) [linux-any],
-               libnma-gtk4-dev (>= 1.10.2) [linux-any],
+               libnma-gtk4-dev [linux-any],
                libpolkit-gobject-1-dev,
                libpulse-dev,
                libpwquality-dev,
@@ -55,13 +55,12 @@ Build-Depends: debhelper-compat (= 13),
                libxml2-dev,
                libxml2-utils,
                locales,
-               meson (>= 0.60.0),
+               meson,
                pkexec,
                python3-dbusmock <!nocheck>,
                shared-mime-info,
-               tecla (>= 47),
+               tecla,
                tzdata <!nocheck>,
-Standards-Version: 4.7.3
 XS-Debian-Vcs-Git: https://salsa.debian.org/gnome-team/gnome-control-center.git
 XS-Debian-Vcs-Browser: https://salsa.debian.org/gnome-team/gnome-control-center
 Vcs-Git: https://salsa.debian.org/gnome-team/gnome-control-center.git -b ubuntu/latest
@@ -83,12 +82,10 @@ Depends: accountsservice (>= 23.11.69),
          language-selector-gnome (>= 0.179~),
          libjxl-gdk-pixbuf,
          mutter-common (>= 47),
-         tecla (>= 47),
+         tecla,
          upower,
          webp-pixbuf-loader,
          whoopsie-preferences,
-         ${misc:Depends},
-         ${shlibs:Depends}
 Recommends: cracklib-runtime,
             cups-pk-helper,
             fwupd [linux-any],
@@ -105,14 +102,13 @@ Recommends: cracklib-runtime,
             polkitd,
             power-profiles-daemon,
             rygel | rygel-tracker,
-            system-config-printer-common
+            system-config-printer-common,
 Suggests: gnome-software | gnome-packagekit,
           gnome-user-share,
-          gstreamer1.0-plugins-good (>= 1.18.0),
+          gstreamer1.0-plugins-good,
           malcontent-gui [linux-any],
           realmd,
-Breaks: gnome-remote-desktop (<< 42),
-        gnome-shell (<< 49)
+Breaks: gnome-shell (<< 49),
 Description: utilities to configure the GNOME desktop
  This package contains configuration applets for the GNOME desktop,
  allowing to set accessibility configuration, desktop fonts, keyboard
@@ -137,14 +133,12 @@ Architecture: all
 Multi-Arch: foreign
 Section: devel
 Depends: gnome-control-center-data,
-         ${misc:Depends}
 Description: utilities to configure the GNOME desktop
  This package contains the file required to get the keydirs location
 
 Package: gnome-control-center-data
 Architecture: all
 Multi-Arch: foreign
-Depends: ${misc:Depends}
 Description: configuration applets for GNOME - data files
  This package contains data files (icons, pixmaps, locales files) needed by
  the configuration applets in the gnome-control-center package.

@@ -8,24 +8,24 @@
 # Piotr Drąg <piotrdrag@gmail.com>, 2009-2025.
 # Wojciech Szczęsny <wszczesny@aviary.pl>, 2013.
 # Aviary.pl <community-poland@mozilla.org>, 2007-2025.
-# Victoria <royal.victoria@proton.me>, 2026.
+# Victoria Niedzielska <victorian@gnome.org>, 2026.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: gnome-control-center\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/gnome-control-center/"
 "issues\n"
-"POT-Creation-Date: 2026-02-10 13:00+0000\n"
-"PO-Revision-Date: 2026-03-07 14:43+0100\n"
-"Last-Translator: Victoria <royal.victoria@proton.me>\n"
-"Language-Team: Polish\n"
+"POT-Creation-Date: 2026-05-29 07:54+0000\n"
+"PO-Revision-Date: 2026-03-28 13:42+0100\n"
+"Last-Translator: Victoria Niedzielska <victorian@gnome.org>\n"
+"Language-Team: Polish <https://l10n.gnome.org/teams/pl/>\n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Gtranslator 49.0\n"
+"X-Generator: Gtranslator 50.0\n"
 
 #: global-shortcuts-provider/cc-global-shortcut-dialog.blp:7
 msgid "Add Keyboard Shortcuts"
@@ -42,7 +42,7 @@ msgstr "Dodanie skrótów klawiszowych"
 #: panels/keyboard/cc-keyboard-shortcut-dialog.blp:144
 #: panels/keyboard/cc-keyboard-shortcut-editor.blp:13
 #: panels/network/cc-net-proxy-page.blp:15
-#: panels/network/cc-wifi-hotspot-dialog.blp:122
+#: panels/network/cc-wifi-hotspot-dialog.blp:129
 #: panels/network/cc-wifi-panel.blp:180
 #: panels/network/connection-editor/ce-page-details.c:89
 #: panels/network/connection-editor/connection-editor.blp:17
@@ -244,7 +244,7 @@ msgstr "Odbieranie wyszukiwań systemowych i odsyłanie wyników"
 #: panels/keyboard/keyboard-shortcuts.c:367 panels/network/panel-common.c:336
 #: panels/system/users/cc-user-page.c:368
 #: panels/system/users/cc-user-page.c:753 panels/wwan/cc-wwan-device-page.c:483
-#: subprojects/gvc/gvc-mixer-control.c:1910
+#: subprojects/gvc/gvc-mixer-control.c:1919
 msgid "Disabled"
 msgstr "Wyłączone"
 
@@ -479,8 +479,8 @@ msgstr "System plików"
 
 #: panels/applications/cc-applications-panel.c:897
 #: panels/keyboard/01-launchers.xml.in:6
-#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:7 shell/cc-window.blp:20
-#: shell/cc-window.c:804 shell/org.gnome.Settings.desktop.in:2
+#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:8 shell/cc-window.blp:20
+#: shell/cc-window.c:842 shell/org.gnome.Settings.desktop.in:2
 msgid "Settings"
 msgstr "Ustawienia"
 
@@ -723,7 +723,7 @@ msgstr "Dzi_ałanie"
 
 #: panels/applications/cc-snap-row.c:253
 msgid "Add user accounts and change passwords"
-msgstr "Dodawanie kont osób używających i zmienianie haseł"
+msgstr "Dodawanie kont użytkowników i zmienianie haseł"
 
 #: panels/applications/cc-snap-row.c:255 panels/applications/cc-snap-row.c:329
 msgid "Play and record sound"
@@ -792,7 +792,7 @@ msgstr "Używanie liczb losowych wygenerowanych sprzętowo"
 
 #: panels/applications/cc-snap-row.c:287
 msgid "Access files in your home folder"
-msgstr "Dostęp do plików w katalogu domowym osoby używającej"
+msgstr "Dostęp do plików w Twoim katalogu domowym"
 
 #: panels/applications/cc-snap-row.c:289
 msgid "Access libvirt service"
@@ -808,7 +808,7 @@ msgstr "Zmienianie ustawień położenia i dostawców informacji o położeniu
 
 #: panels/applications/cc-snap-row.c:295
 msgid "Access your location"
-msgstr "Dostęp do położenia osoby używającej"
+msgstr "Dostęp do Twojego położenia"
 
 #: panels/applications/cc-snap-row.c:297
 msgid "Read system and application logs"
@@ -1504,11 +1504,11 @@ msgstr ""
 
 #: panels/color/cc-color-panel.ui:466
 msgid "_Set for All Users"
-msgstr "_Ustaw dla wszystkich osób używających"
+msgstr "_Ustaw dla wszystkich użytkowników"
 
 #: panels/color/cc-color-panel.ui:467
 msgid "Set this profile for all users on this device"
-msgstr "Ustawia ten profil dla wszystkich osób używających tego urządzenia"
+msgstr "Ustaw ten profil dla wszystkich użytkowników tego urządzenia"
 
 #: panels/color/cc-color-panel.ui:474
 msgid "_Enable"
@@ -2762,7 +2762,7 @@ msgstr "Przy_spieszenie myszy"
 
 #: panels/mouse/cc-mouse-panel.blp:120 panels/mouse/cc-mouse-panel.blp:316
 msgid "Recommended for most users and applications"
-msgstr "Zalecane dla większości osób używających i programów"
+msgstr "Zalecane dla większości użytkowników i programów"
 
 #: panels/mouse/cc-mouse-panel.blp:127
 msgid ""
@@ -3101,8 +3101,8 @@ msgid "FTP Proxy"
 msgstr "Pośrednik FTP"
 
 #: panels/network/cc-net-proxy-page.blp:140
-msgid "SOCKS Host"
-msgstr "Komputer SOCKS"
+msgid "SOCKS Proxy"
+msgstr "Pośrednik SOCKS"
 
 #: panels/network/cc-net-proxy-page.blp:158
 msgid "Ignored Hosts"
@@ -3159,7 +3159,7 @@ msgstr "Nazwa sieci"
 
 #. Translators: This is a password needed for printing.
 #: panels/network/cc-qr-code-dialog.blp:64
-#: panels/network/cc-wifi-hotspot-dialog.blp:79
+#: panels/network/cc-wifi-hotspot-dialog.blp:83
 #: panels/printers/pp-jobs-dialog.blp:171
 #: panels/printers/pp-new-printer-dialog.ui:300
 #: panels/system/users/cc-add-user-dialog.blp:89
@@ -3228,15 +3228,15 @@ msgstr ""
 "komputera przez utworzenie sieci Wi-Fi, z którą mogą się połączyć. Aby to "
 "zrobić, należy mieć połączenie z Internetem z innego źródła niż Wi-Fi."
 
-#: panels/network/cc-wifi-hotspot-dialog.blp:92
+#: panels/network/cc-wifi-hotspot-dialog.blp:96
 msgid "Generate Random Password"
 msgstr "Tworzy losowe hasło"
 
-#: panels/network/cc-wifi-hotspot-dialog.blp:93
+#: panels/network/cc-wifi-hotspot-dialog.blp:97
 msgid "Autogenerate Password"
 msgstr "Automatycznie utwórz hasło"
 
-#: panels/network/cc-wifi-hotspot-dialog.blp:128
+#: panels/network/cc-wifi-hotspot-dialog.blp:135
 msgid "_Turn On"
 msgstr "_Włącz"
 
@@ -3749,7 +3749,7 @@ msgstr "Łączenie _automatyczne"
 
 #: panels/network/connection-editor/details-page.blp:399
 msgid "Make available to _other users"
-msgstr "_Dostępna dla innych osób używających"
+msgstr "_Udostępnij innym użytkownikom"
 
 #: panels/network/connection-editor/details-page.blp:425
 msgid "_Metered connection: has data limits or can incur charges"
@@ -4102,7 +4102,7 @@ msgid "seconds"
 msgstr "s"
 
 #: panels/network/connection-editor/wireguard-peer.blp:227
-#: panels/universal-access/cc-ua-seeing-page.blp:115
+#: panels/universal-access/cc-ua-seeing-page.blp:109
 msgid "Apply"
 msgstr "Zastosuj"
 
@@ -4685,12 +4685,12 @@ msgstr "Tryb offline — nie można połączyć z kontami"
 #: panels/online-accounts/cc-online-accounts-panel.blp:18
 msgid "Allow apps to access online services by connecting your cloud accounts"
 msgstr ""
-"Nadanie programom dostępu do usług online przez połączenie z kontami osoby "
-"używającej w chmurze"
+"Nadanie programom dostępu do usług online poprzez połączenie z Twoimi "
+"kontami w chmurze"
 
 #: panels/online-accounts/cc-online-accounts-panel.blp:21
 msgid "Your Accounts"
-msgstr "Konta osoby używającej"
+msgstr "Twoje konta"
 
 #: panels/online-accounts/cc-online-accounts-panel.blp:42
 msgid "Connect an Account"
@@ -4983,47 +4983,47 @@ msgstr ""
 "jest niewyłączanie tej funkcji."
 
 #. TRANSLATORS: This is the same title as the title from the .ui file, but without mnemonic
-#: panels/power/cc-power-panel.c:211
+#: panels/power/cc-power-panel.c:228
 msgid "Power Saving"
 msgstr "Oszczędzanie energii"
 
-#: panels/power/cc-power-panel.c:311
+#: panels/power/cc-power-panel.c:328
 msgid "Battery Levels"
 msgstr "Poziomy naładowania akumulatorów"
 
 #. Translators: UPS is an Uninterruptible Power Supply:
 #. * https://en.wikipedia.org/wiki/Uninterruptible_power_supply
-#: panels/power/cc-power-panel.c:316
+#: panels/power/cc-power-panel.c:333
 msgid "UPS"
 msgstr "UPS"
 
-#: panels/power/cc-power-panel.c:319
+#: panels/power/cc-power-panel.c:336
 msgid "Battery Level"
 msgstr "Poziom naładowania akumulatora"
 
-#: panels/power/cc-power-panel.c:569
+#: panels/power/cc-power-panel.c:580
 msgid "Suspend"
 msgstr "Uśpienie"
 
-#: panels/power/cc-power-panel.c:570
+#: panels/power/cc-power-panel.c:581
 msgid "Power Off"
 msgstr "Wyłączenie komputera"
 
-#: panels/power/cc-power-panel.c:571
+#: panels/power/cc-power-panel.c:582
 msgid "Hibernate"
 msgstr "Hibernacja"
 
-#: panels/power/cc-power-panel.c:572
+#: panels/power/cc-power-panel.c:583
 msgid "Nothing"
 msgstr "Nic"
 
-#: panels/power/cc-power-panel.c:877
+#: panels/power/cc-power-panel.c:967
 msgid "Performance mode temporarily disabled due to high operating temperature"
 msgstr ""
 "Tryb wydajności jest tymczasowo wyłączony z powodu wysokiej temperatury "
 "działania"
 
-#: panels/power/cc-power-panel.c:879
+#: panels/power/cc-power-panel.c:969
 msgid ""
 "Lap detected: performance mode temporarily unavailable. Move the device to a "
 "stable surface to restore."
@@ -5031,11 +5031,11 @@ msgstr ""
 "Wykryto kolana: tryb wydajności jest tymczasowo niedostępny. Należy "
 "przenieść urządzenie na stabilną powierzchnię, aby przywrócić."
 
-#: panels/power/cc-power-panel.c:881
+#: panels/power/cc-power-panel.c:971
 msgid "Performance mode temporarily disabled"
 msgstr "Tryb wydajności jest tymczasowo wyłączony"
 
-#: panels/power/cc-power-panel.c:923
+#: panels/power/cc-power-panel.c:1013
 msgid ""
 "Power saver enabled due to low battery. Previous mode will be restored when "
 "battery is charged."
@@ -5044,13 +5044,13 @@ msgstr ""
 "akumulatora. Poprzedni tryb zostanie przywrócony po naładowaniu akumulatora."
 
 #. translators: "%s" is an application name
-#: panels/power/cc-power-panel.c:931
+#: panels/power/cc-power-panel.c:1021
 #, c-format
 msgid "Power Saver mode activated by “%s”"
 msgstr "Tryb oszczędzania energii został włączony przez program „%s”"
 
 #. translators: "%s" is an application name
-#: panels/power/cc-power-panel.c:935
+#: panels/power/cc-power-panel.c:1025
 #, c-format
 msgid "Performance mode activated by “%s”"
 msgstr "Tryb wydajności został włączony przez program „%s”"
@@ -5356,7 +5356,7 @@ msgstr "Domena"
 #: panels/printers/pp-new-printer-dialog.ui:280
 #: panels/wwan/cc-wwan-apn-dialog.blp:129
 msgid "Username"
-msgstr "Nazwa osoby używającej"
+msgstr "Nazwa użytkownika"
 
 #. Translators: This button authenticates all print jobs and send them for printing.
 #: panels/printers/pp-jobs-dialog.blp:219
@@ -5408,8 +5408,7 @@ msgstr "Odblokowanie „%s”."
 #, c-format
 msgid "Enter username and password to view printers on %s."
 msgstr ""
-"Proszę wprowadzić nazwę osoby używającej i hasło, aby wyświetlić drukarki "
-"w „%s”."
+"Proszę wprowadzić nazwę użytkownika i hasło, aby wyświetlić drukarki w „%s”."
 
 #. Translators: The found device is a printer connected via USB
 #: panels/printers/pp-new-printer-dialog.c:1351
@@ -5480,8 +5479,8 @@ msgstr "Wymagane jest uwierzytelnienie"
 #: panels/printers/pp-new-printer-dialog.ui:271
 msgid "Enter username and password to view printers on Print Server"
 msgstr ""
-"Proszę wprowadzić nazwę osoby używającej i hasło, aby wyświetlić drukarki "
-"na serwerze wydruku"
+"Proszę wprowadzić nazwę użytkownika i hasło, aby wyświetlić drukarki na "
+"serwerze wydruku"
 
 #: panels/printers/pp-options-dialog.blp:5
 #: panels/printers/pp-options-dialog.blp:29
@@ -6038,7 +6037,7 @@ msgstr "Automatyczne blokowanie ekranu"
 
 #: panels/privacy/cc-privacy-panel.blp:29
 msgid "Control access to your location"
-msgstr "Sterowanie dostępem do położenia osoby używającej"
+msgstr "Sterowanie dostępem do Twojego położenia"
 
 #: panels/privacy/cc-privacy-panel.blp:37
 msgid "_File History &amp; Trash"
@@ -6340,11 +6339,11 @@ msgstr ""
 "Zabezpieczenia urządzenia są dostępne tylko na fizycznym sprzęcie. Nie "
 "wykryto żadnego fizycznego sprzętu."
 
-#: panels/privacy/firmware-security/cc-firmware-security-page.blp:160
+#: panels/privacy/firmware-security/cc-firmware-security-page.blp:162
 msgid "Security Events"
 msgstr "Zdarzenia zabezpieczeń"
 
-#: panels/privacy/firmware-security/cc-firmware-security-page.blp:167
+#: panels/privacy/firmware-security/cc-firmware-security-page.blp:169
 msgid "No Events"
 msgstr "Brak zdarzeń"
 
@@ -6517,8 +6516,7 @@ msgstr "Nieobsługiwane"
 #: panels/privacy/gnome-privacy-panel.desktop.in:3
 msgid "Control access to your data and hardware, device security"
 msgstr ""
-"Sterowanie dostępem do danych i sprzętu osoby używającej oraz zabezpieczeń "
-"urządzenia"
+"Sterowanie dostępem do Twoich danych i sprzętu oraz zabezpieczeń urządzenia"
 
 #. Translators: Search terms to find the Privacy panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: panels/privacy/gnome-privacy-panel.desktop.in:14
@@ -6561,7 +6559,7 @@ msgid ""
 "while you're away"
 msgstr ""
 "Automatyczne blokowanie ekranu uniemożliwia innym dostęp do urządzenia, "
-"kiedy osoba używająca nie jest w pobliżu"
+"kiedy nie jesteś w pobliżu"
 
 #: panels/privacy/screen/cc-screen-page.blp:17
 msgid "_Blank Screen Delay"
@@ -6632,8 +6630,8 @@ msgid ""
 "to use."
 msgstr ""
 "Historia plików zachowuje listę plików, które zostały użyte. Te informacje "
-"są współdzielone przez programy i ułatwiają wyszukiwanie plików potrzebnych "
-"osobie używającej."
+"są współdzielone przez programy i ułatwiają wyszukiwanie plików, które "
+"możesz potrzebować."
 
 #: panels/privacy/usage/cc-usage-page.blp:18
 msgid "File H_istory"
@@ -6945,7 +6943,7 @@ msgstr "Udostępnianie"
 
 #: panels/sharing/gnome-sharing-panel.desktop.in:3
 msgid "Control what you want to share with others"
-msgstr "Sterowanie udostępnianiem innym osobom używającym"
+msgstr "Steruj z czym się dzielisz z innymi"
 
 #. Translators: Search terms to find the Sharing panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: panels/sharing/gnome-sharing-panel.desktop.in:14
@@ -7705,7 +7703,7 @@ msgstr "Informacje o logowaniu"
 #: panels/system/users/cc-add-user-dialog.blp:56
 #: panels/system/users/cc-enterprise-login-dialog.blp:81
 msgid "_Username"
-msgstr "_Nazwa osoby używającej"
+msgstr "_Nazwa użytkownika"
 
 #: panels/system/remote-desktop/cc-desktop-sharing-page.blp:111
 #: panels/system/remote-desktop/cc-remote-login-page.blp:101
@@ -7735,7 +7733,7 @@ msgstr "Skopiowano numer portu do schowka"
 #: panels/system/remote-desktop/cc-desktop-sharing-page.c:377
 #: panels/system/remote-desktop/cc-remote-login-page.c:116
 msgid "Username copied to clipboard"
-msgstr "Skopiowano nazwę osoby używającej do schowka"
+msgstr "Skopiowano nazwę użytkownika do schowka"
 
 #: panels/system/remote-desktop/cc-desktop-sharing-page.c:388
 #: panels/system/remote-desktop/cc-remote-login-page.c:127
@@ -7771,8 +7769,8 @@ msgid ""
 "Remotely connect to your user account when it isn’t being used. The display "
 "resolution can be set from the remote."
 msgstr ""
-"Zdalne łączenie z kontem osoby używającej, kiedy nie jest używane. "
-"Rozdzielczość wyświetlania może być ustawiona po zdalnej stronie."
+"Zdalne łączenie z kontem użytkownika, kiedy nie jest używane. Rozdzielczość "
+"wyświetlania może być ustawiona po zdalnej stronie."
 
 #: panels/system/remote-desktop/cc-remote-login-page.blp:27
 msgid "_Remote Login"
@@ -7817,11 +7815,11 @@ msgstr ""
 
 #: panels/system/users/cc-add-user-dialog.blp:9
 msgid "Add User"
-msgstr "Dodanie osoby używającej"
+msgstr "Dodaj użytkownika"
 
 #: panels/system/users/cc-add-user-dialog.blp:46
 msgid "User Details"
-msgstr "Informacje o osobie używającej"
+msgstr "Informacje o użytkowniku"
 
 #: panels/system/users/cc-add-user-dialog.blp:49
 msgid "Fu_ll Name"
@@ -7832,12 +7830,12 @@ msgid ""
 "Usernames can only include lower case letters, numbers, hyphens and "
 "underscores."
 msgstr ""
-"Nazwa osoby używającej może zawierać tylko małe litery, cyfry, myślniki "
+"Nazwa użytkownika może zawierać tylko małe litery, cyfry, myślniki "
 "i podkreślniki."
 
 #: panels/system/users/cc-add-user-dialog.blp:72
 msgid "Ad_ministrator"
-msgstr "Osoba _administrująca"
+msgstr "_Administrator"
 
 #: panels/system/users/cc-add-user-dialog.blp:78
 #: panels/system/users/cc-user-page.blp:139
@@ -7846,14 +7844,13 @@ msgid ""
 "changing login settings, and removing software. Parental controls cannot be "
 "applied to administrators."
 msgstr ""
-"Osoby administrujące mają dodatkowe możliwości, takie jak dodawanie "
-"i usuwanie osób używających, zmienianie ustawień logowania oraz usuwanie "
-"oprogramowania. Kontrola rodzicielska nie może być nakładana na osoby "
-"administrujące."
+"Administratorzy mają dodatkowe możliwości, takie jak dodawanie i usuwanie "
+"użytkowników, zmienianie ustawień logowania oraz usuwanie oprogramowania. "
+"Kontrola rodzicielska nie może być nakładana na administratorów."
 
 #: panels/system/users/cc-add-user-dialog.blp:93
 msgid "User sets password on _first login"
-msgstr "Osoba używająca u_stawi hasło podczas pierwszego logowania"
+msgstr "Użytkownik u_stawi hasło podczas pierwszego logowania"
 
 #: panels/system/users/cc-add-user-dialog.blp:105
 msgid "Set password n_ow"
@@ -7949,11 +7946,11 @@ msgstr "_Zapisz"
 
 #: panels/system/users/cc-enterprise-login-dialog.blp:126
 msgid "Administrator _Name"
-msgstr "_Nazwa osoby administrującej"
+msgstr "_Nazwa administratora"
 
 #: panels/system/users/cc-enterprise-login-dialog.blp:132
 msgid "Administrator _Password"
-msgstr "_Hasło osoby administrującej"
+msgstr "_Hasło administratora"
 
 #: panels/system/users/cc-enterprise-login-dialog.c:148
 #: panels/system/users/cc-enterprise-login-dialog.c:186
@@ -7998,8 +7995,8 @@ msgid ""
 "password."
 msgstr ""
 "Aby dodać konto logowania firmowego, to urządzenie musi być zapisane do "
-"domeny <b>%s</b>. Aby to zrobić, należy poprosić osobę administrującą "
-"domeny, aby wpisała swoje dane i hasło."
+"domeny <b>%s</b>. Aby to zrobić, należy poprosić administratora domeny o "
+"wpisanie swoich danych i hasła."
 
 #: panels/system/users/cc-enterprise-login-dialog.c:548
 msgid "Valid domain"
@@ -8252,8 +8249,7 @@ msgstr "Potwierdzenie hasła"
 
 #: panels/system/users/cc-password-dialog.blp:113
 msgid "Allow user to change their password on next login"
-msgstr ""
-"Osoba używająca będzie mógła zmienić hasło podczas następnego logowania"
+msgstr "Użytkownik będzie mógł zmienić hasło podczas następnego logowania"
 
 #: panels/system/users/cc-password-dialog.blp:124
 msgid "Set a password now"
@@ -8330,13 +8326,13 @@ msgid ""
 "requiring authentication. Authentication is still required at other times, "
 "such as when unlocking the screen."
 msgstr ""
-"Automatyczne logowanie otwiera konto osoba używającej po uruchomieniu "
-"urządzenia, bez wymagania uwierzytelniania. Uwierzytelnienie jest nadal "
-"wymagane do innych działań, na przykład odblokowania ekranu."
+"Automatyczne logowanie otwiera konto użytkownika po uruchomieniu urządzenia, "
+"bez wymagania uwierzytelniania. Uwierzytelnienie jest nadal wymagane do "
+"innych działań, na przykład odblokowania ekranu."
 
 #: panels/system/users/cc-user-page.blp:132
 msgid "_Administrator"
-msgstr "Osoba _administrująca"
+msgstr "_Administrator"
 
 #: panels/system/users/cc-user-page.blp:149
 msgid "_Parental Controls"
@@ -8348,14 +8344,13 @@ msgstr "Otwiera program do sterowania kontrolą rodzicielską"
 
 #: panels/system/users/cc-user-page.blp:176
 msgid "_Remove User…"
-msgstr "_Usuń osobę używającą…"
+msgstr "_Usuń użytkownika…"
 
 #: panels/system/users/cc-user-page.blp:191
 msgid ""
 "The user will not be able to use this device once their account has been "
 "removed"
-msgstr ""
-"Po usunięciu konta osoba używająca nie będzie mógła używać tego urządzenia"
+msgstr "Po usunięciu konta użytkownik nie będzie mógł używać tego urządzenia"
 
 #: panels/system/users/cc-user-page.blp:204
 msgid "_Delete Files and Settings"
@@ -8380,7 +8375,8 @@ msgstr "Brak"
 #: panels/system/users/cc-user-page.c:422
 #, c-format
 msgid "Remove %s?"
-msgstr "Usunąć osobę używającą „%s”?"
+msgstr "Usunąć użytkownika %s?"
+
 
 #: panels/system/users/cc-users-page.blp:9
 #: panels/system/users/gnome-users-panel.desktop.in:2
@@ -8393,7 +8389,7 @@ msgstr "Inni użytkownicy"
 
 #: panels/system/users/cc-users-page.blp:26
 msgid "_Add User"
-msgstr "_Dodaj osobę używającą"
+msgstr "_Dodaj użytkownika"
 
 #: panels/system/users/cc-users-page.blp:34
 msgid "Add _Enterprise Login"
@@ -8401,7 +8397,7 @@ msgstr "Dodaj logowanie fir_mowe"
 
 #: panels/system/users/gnome-users-panel.desktop.in:3
 msgid "Add or remove users and change your password"
-msgstr "Dodawanie lub usuwanie osób używających i zmienianie hasła"
+msgstr "Dodawanie lub usuwanie użytkowników i zmienianie hasła"
 
 #. Translators: Search terms to find the Users panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: panels/system/users/gnome-users-panel.desktop.in:14
@@ -8410,11 +8406,11 @@ msgstr "Login;Logowanie;Nazwa;Odcisk;Palców;Linie;Linii;Papilarne;Papilarnych;F
 
 #: panels/system/users/org.gnome.controlcenter.user-accounts.policy.in:11
 msgid "Manage user accounts"
-msgstr "Zarządzanie kontami osób używających"
+msgstr "Zarządzanie kontami użytkowników"
 
 #: panels/system/users/org.gnome.controlcenter.user-accounts.policy.in:12
 msgid "Authentication is required to change user data"
-msgstr "Wymagane jest uwierzytelnienie, aby zmienić dane osób używających"
+msgstr "Wymagane jest uwierzytelnienie, aby zmienić dane użytkowników"
 
 #: panels/system/users/pw-utils.c:105
 msgctxt "Password hint"
@@ -8434,7 +8430,7 @@ msgstr "Proszę trochę bardziej zmienić hasło"
 #: panels/system/users/pw-utils.c:111
 msgctxt "Password hint"
 msgid "A password without your user name would be stronger"
-msgstr "Hasło bez nazwy osoby używającej byłoby silniejsze"
+msgstr "Hasło bez Twojej nazwy użytkownika byłoby silniejsze"
 
 #: panels/system/users/pw-utils.c:113
 msgctxt "Password hint"
@@ -8572,7 +8568,7 @@ msgid ""
 "different password or contact your system administrator."
 msgstr ""
 "Hasło nie spełnia wymogów bezpieczeństwa twojej organizacji. Proszę "
-"spróbować inne hasło lub skontaktować się z osobą administrującą systemu."
+"spróbować inne hasło lub skontaktować się z administratorem systemu."
 
 #: panels/system/users/run-passwd.c:507 panels/wwan/cc-wwan-errors-private.h:72
 #, c-format
@@ -8583,19 +8579,19 @@ msgstr "Nieznany błąd"
 #: panels/system/users/user-utils.c:148
 #, c-format
 msgid "Usernames cannot include “%s”"
-msgstr "Nazwa osoby używającej nie może zawierać znaku „%s”"
+msgstr "Nazwa użytkownika nie może zawierać znaku „%s”"
 
 #: panels/system/users/user-utils.c:152
 msgid "Username is already in use — please choose another"
-msgstr "Nazwa osoby używającej jest już używana — proszę wybrać inną"
+msgstr "Nazwa użytkownika jest już używana — proszę wybrać inną"
 
 #: panels/system/users/user-utils.c:195
 #, c-format
 msgid "Usernames must have fewer than %ld character"
 msgid_plural "Usernames must have fewer than %ld characters"
-msgstr[0] "Nazwa osoby używającej nie może mieć więcej niż %ld znak"
-msgstr[1] "Nazwa osoby używającej nie może mieć więcej niż %ld znaki"
-msgstr[2] "Nazwa osoby używającej nie może mieć więcej niż %ld znaków"
+msgstr[0] "Nazwa użytkownika nie może mieć więcej niż %ld znak"
+msgstr[1] "Nazwa użytkownika nie może mieć więcej niż %ld znaki"
+msgstr[2] "Nazwa użytkownika nie może mieć więcej niż %ld znaków"
 
 #: panels/universal-access/cc-cursor-size-page.blp:5
 msgid "Cursor Size"
@@ -8826,89 +8822,88 @@ msgstr "_Ograniczenie ruchu"
 
 #: panels/universal-access/cc-ua-seeing-page.blp:56
 msgid "Toggle reduced motion animations throughout the user interface"
-msgstr "Przełącza ograniczenie ruchu w całym interfejsie osoby używającej"
+msgstr "Przełącza ograniczenie ruchu w całym interfejsie"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:67
+#: panels/universal-access/cc-ua-seeing-page.blp:61
 msgid "_Text Size"
 msgstr "_Rozmiar tekstu"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:74
+#: panels/universal-access/cc-ua-seeing-page.blp:68
 msgid "_Cursor Size"
 msgstr "_Rozmiar kursora"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:75
+#: panels/universal-access/cc-ua-seeing-page.blp:69
 msgid "Increase the size of the cursor"
 msgstr "Zwiększenie rozmiaru kursora"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:81
+#: panels/universal-access/cc-ua-seeing-page.blp:75
 msgid "_Sound Keys"
 msgstr "_Słyszalne klawisze"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:82
+#: panels/universal-access/cc-ua-seeing-page.blp:76
 msgid "Beep when Num Lock or Caps Lock are turned on or off"
 msgstr ""
 "Sygnał dźwiękowy, kiedy klawisz Num Lock lub Caps Lock został przełączony"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:87
+#: panels/universal-access/cc-ua-seeing-page.blp:81
 msgid "Always Show Scroll_bars"
 msgstr "Zawsze _widoczne paski przewijania"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:88
+#: panels/universal-access/cc-ua-seeing-page.blp:82
 msgid "Make scrollbars always visible"
 msgstr "Paski przewijania nie są ukrywane"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:97
+#: panels/universal-access/cc-ua-seeing-page.blp:91
 msgid "Text Size"
 msgstr "Rozmiar tekstu"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:109
+#: panels/universal-access/cc-ua-seeing-page.blp:103
 #: panels/wwan/cc-wwan-device-page.c:191
 msgid "Cancel"
 msgstr "Anuluj"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:125
+#: panels/universal-access/cc-ua-seeing-page.blp:119
 msgid "Use the slider to adjust the size of user interface text"
-msgstr ""
-"Zmienianie rozmiaru tekstu w interfejsie osoby używającej za pomocą suwaka"
+msgstr "Zmienianie rozmiaru tekstu w interfejsie za pomocą suwaka"
 
 #. Translators: Single letter next to the text size slider
-#: panels/universal-access/cc-ua-seeing-page.blp:137
-#: panels/universal-access/cc-ua-seeing-page.blp:157
+#: panels/universal-access/cc-ua-seeing-page.blp:131
+#: panels/universal-access/cc-ua-seeing-page.blp:151
 msgid "A"
 msgstr "A"
 
-#: panels/universal-access/cc-ua-seeing-page.blp:168
+#: panels/universal-access/cc-ua-seeing-page.blp:162
 msgid "Sample text"
 msgstr "Przykładowy teksta"
 
 #. translators: the labels will read:
 #. * Cursor Size: Default
-#: panels/universal-access/cc-ua-seeing-page.c:215
+#: panels/universal-access/cc-ua-seeing-page.c:213
 msgctxt "cursor size"
 msgid "Default"
 msgstr "Domyślny"
 
-#: panels/universal-access/cc-ua-seeing-page.c:218
+#: panels/universal-access/cc-ua-seeing-page.c:216
 msgctxt "cursor size"
 msgid "Medium"
 msgstr "Średni"
 
-#: panels/universal-access/cc-ua-seeing-page.c:221
+#: panels/universal-access/cc-ua-seeing-page.c:219
 msgctxt "cursor size"
 msgid "Large"
 msgstr "Duży"
 
-#: panels/universal-access/cc-ua-seeing-page.c:224
+#: panels/universal-access/cc-ua-seeing-page.c:222
 msgctxt "cursor size"
 msgid "Larger"
 msgstr "Większy"
 
-#: panels/universal-access/cc-ua-seeing-page.c:227
+#: panels/universal-access/cc-ua-seeing-page.c:225
 msgctxt "cursor size"
 msgid "Largest"
 msgstr "Największy"
 
-#: panels/universal-access/cc-ua-seeing-page.c:231
+#: panels/universal-access/cc-ua-seeing-page.c:229
 #, c-format
 msgid "%d pixel"
 msgid_plural "%d pixels"
@@ -9467,15 +9462,15 @@ msgstr ""
 "Informacje o czasie korzystania z ekranu będą tu wyświetlane po pewnym "
 "czasie korzystania"
 
-#: panels/wellbeing/cc-screen-time-statistics-row.blp:164
+#: panels/wellbeing/cc-screen-time-statistics-row.blp:166
 msgid "Average Week"
 msgstr "Typowy tydzień"
 
-#: panels/wellbeing/cc-screen-time-statistics-row.blp:208
+#: panels/wellbeing/cc-screen-time-statistics-row.blp:212
 msgid "Previous Week"
 msgstr "Poprzedni tydzień"
 
-#: panels/wellbeing/cc-screen-time-statistics-row.blp:218
+#: panels/wellbeing/cc-screen-time-statistics-row.blp:222
 msgid "Next Week"
 msgstr "Następny tydzień"
 
@@ -10333,16 +10328,16 @@ msgstr "Konfiguracja połączeń telefonicznych i komórkowych"
 msgid "cellular;wwan;telephony;sim;mobile;"
 msgstr "komórkowa;komórka;wwan;telefon;telefonia;sim;pin;puk;mobilna;"
 
-#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:8
+#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:9
 msgid "Utility to configure the GNOME desktop"
 msgstr "Narzędzie do konfigurowania środowiska GNOME"
 
-#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:10
+#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:11
 msgid "Settings is the primary interface for configuring your system."
 msgstr "Główny interfejs do konfigurowania komputera."
 
 #. developer_name tag deprecated with Appstream 1.0
-#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:39
+#: shell/appdata/org.gnome.Settings.metainfo.xml.in.in:40
 msgid "The GNOME Project"
 msgstr "Projekt GNOME"
 
@@ -10381,7 +10376,7 @@ msgstr ""
 "Piotr Drąg <piotrdrag@gmail.com>, 2009-2025\n"
 "Wojciech Szczęsny <wszczesny@aviary.pl>, 2013\n"
 "Aviary.pl <community-poland@mozilla.org>, 2007-2025\n"
-"Victoria <royal.victoria@proton.me>, 2026"
+"Victoria Niedzielska <victorian@gnome.org>, 2026"
 
 #: shell/cc-application.c:127
 #, c-format
@@ -10513,7 +10508,7 @@ msgstr "Anulowanie wyszukiwania"
 
 #. translators:
 #. * The number of sound outputs on a particular device
-#: subprojects/gvc/gvc-mixer-control.c:1917
+#: subprojects/gvc/gvc-mixer-control.c:1926
 #, c-format
 msgid "%u Output"
 msgid_plural "%u Outputs"
@@ -10523,7 +10518,7 @@ msgstr[2] "%u wyjść"
 
 #. translators:
 #. * The number of sound inputs on a particular device
-#: subprojects/gvc/gvc-mixer-control.c:1927
+#: subprojects/gvc/gvc-mixer-control.c:1936
 #, c-format
 msgid "%u Input"
 msgid_plural "%u Inputs"
@@ -10531,7 +10526,7 @@ msgstr[0] "%u wejście"
 msgstr[1] "%u wejścia"
 msgstr[2] "%u wejść"
 
-#: subprojects/gvc/gvc-mixer-control.c:2910
+#: subprojects/gvc/gvc-mixer-control.c:2919
 msgid "System Sounds"
 msgstr "Dźwięki systemowe"
 

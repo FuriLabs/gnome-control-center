@@ -19,6 +19,7 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 		-Dlocation-services=enabled \
 		-Dprivileged_group=sudo \
+		-Dssh_socket_activation=true \
 		-Dwhoopsie=true \
 		-Dinsights=true \
 		-Ddocumentation=true \

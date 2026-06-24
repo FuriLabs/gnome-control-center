@@ -17,29 +17,29 @@ Please provide merge requests there.
 Origin: ubuntu
 Forwarded: not-needed
 ---
- panels/meson.build                          |    1 +
- panels/ubuntu/assets/colors/color.svg.in    |    5 +
- panels/ubuntu/assets/theme-dark.svg         |    1 +
- panels/ubuntu/assets/theme-light.svg        |    1 +
- panels/ubuntu/cc-ubuntu-dock-dialog.blp     |   73 ++
- panels/ubuntu/cc-ubuntu-dock-dialog.c       |  103 ++
- panels/ubuntu/cc-ubuntu-dock-dialog.h       |   31 +
- panels/ubuntu/cc-ubuntu-panel.blp           |  199 +++
- panels/ubuntu/cc-ubuntu-panel.c             | 1753 +++++++++++++++++++++++++++
- panels/ubuntu/cc-ubuntu-panel.h             |   49 +
- panels/ubuntu/gnome-ubuntu-panel.desktop.in |   13 +
- panels/ubuntu/meson.build                   |  111 ++
- panels/ubuntu/ubuntu.gresource.xml          |    6 +
- po/POTFILES.in                              |    5 +
- shell/cc-panel-list.c                       |    1 +
- shell/cc-panel-loader.c                     |    3 +
- 16 files changed, 2355 insertions(+)
+ panels/meson.build                                 |    1 +
+ panels/ubuntu/assets/colors/color.svg.in           |    5 +
+ panels/ubuntu/assets/theme-dark.svg                |    1 +
+ panels/ubuntu/assets/theme-light.svg               |    1 +
+ panels/ubuntu/cc-ubuntu-dock-dialog.blp            |   73 +
+ panels/ubuntu/cc-ubuntu-dock-dialog.c              |  103 ++
+ .../cc-ubuntu-dock-dialog.h}                       |   11 +-
+ panels/ubuntu/cc-ubuntu-panel.blp                  |  199 +++
+ panels/ubuntu/cc-ubuntu-panel.c                    | 1753 ++++++++++++++++++++
+ panels/ubuntu/cc-ubuntu-panel.h                    |   49 +
+ panels/ubuntu/gnome-ubuntu-panel.desktop.in        |   13 +
+ panels/ubuntu/meson.build                          |  111 ++
+ panels/ubuntu/ubuntu.gresource.xml                 |    6 +
+ po/POTFILES.in                                     |    5 +
+ shell/cc-panel-list.c                              |    1 +
+ shell/cc-panel-loader.c                            |    3 +
+ 16 files changed, 2330 insertions(+), 5 deletions(-)
  create mode 100644 panels/ubuntu/assets/colors/color.svg.in
  create mode 100644 panels/ubuntu/assets/theme-dark.svg
  create mode 100644 panels/ubuntu/assets/theme-light.svg
  create mode 100644 panels/ubuntu/cc-ubuntu-dock-dialog.blp
  create mode 100644 panels/ubuntu/cc-ubuntu-dock-dialog.c
- create mode 100644 panels/ubuntu/cc-ubuntu-dock-dialog.h
+ copy panels/{notifications/cc-notifications-panel.h => ubuntu/cc-ubuntu-dock-dialog.h} (70%)
  create mode 100644 panels/ubuntu/cc-ubuntu-panel.blp
  create mode 100644 panels/ubuntu/cc-ubuntu-panel.c
  create mode 100644 panels/ubuntu/cc-ubuntu-panel.h
@@ -274,43 +274,39 @@ index 0000000..266f486
 +
 +  return dialog;
 +}
-diff --git a/panels/ubuntu/cc-ubuntu-dock-dialog.h b/panels/ubuntu/cc-ubuntu-dock-dialog.h
-new file mode 100644
-index 0000000..cd84651
---- /dev/null
+diff --git a/panels/notifications/cc-notifications-panel.h b/panels/ubuntu/cc-ubuntu-dock-dialog.h
+similarity index 70%
+copy from panels/notifications/cc-notifications-panel.h
+copy to panels/ubuntu/cc-ubuntu-dock-dialog.h
+index 74a1954..cd84651 100644
+--- a/panels/notifications/cc-notifications-panel.h
 +++ b/panels/ubuntu/cc-ubuntu-dock-dialog.h
-@@ -0,0 +1,31 @@
-+/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*- */
-+/*
+@@ -1,6 +1,6 @@
+ /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*- */
+ /*
+- * Copyright (C) 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
 + * Copyright (C) 2022 Marco Trevisan <marco.trevisan@canonical.com>
-+ *
-+ * This library is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU Lesser General Public
-+ * License as published by the Free Software Foundation; either
-+ * version 2 of the License, or (at your option) any later version.
-+ *
-+ * This library is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * Lesser General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General
-+ * Public License along with this library; if not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#pragma once
-+
+  *
+  * This library is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU Lesser General Public
+@@ -19,12 +19,13 @@
+ 
+ #pragma once
+ 
+-#include <gio/gio.h>
+-#include <shell/cc-panel.h>
 +#include <gtk/gtk.h>
-+
-+G_BEGIN_DECLS
-+
+ 
+ G_BEGIN_DECLS
+ 
+-#define CC_TYPE_NOTIFICATIONS_PANEL  (cc_notifications_panel_get_type ())
+-G_DECLARE_FINAL_TYPE (CcNotificationsPanel, cc_notifications_panel, CC, NOTIFICATIONS_PANEL, CcPanel)
 +#define CC_TYPE_UBUNTU_DOCK_DIALOG (cc_ubuntu_dock_dialog_get_type ())
 +G_DECLARE_FINAL_TYPE (CcUbuntuDockDialog, cc_ubuntu_dock_dialog, CC, UBUNTU_DOCK_DIALOG, GtkDialog)
 +
 +CcUbuntuDockDialog *cc_ubuntu_dock_dialog_new (GSettings *settings);
-+
-+G_END_DECLS
+ 
+ G_END_DECLS
 diff --git a/panels/ubuntu/cc-ubuntu-panel.blp b/panels/ubuntu/cc-ubuntu-panel.blp
 new file mode 100644
 index 0000000..4bbe6fa

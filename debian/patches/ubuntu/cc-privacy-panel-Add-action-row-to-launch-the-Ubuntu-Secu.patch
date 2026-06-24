@@ -36,7 +36,7 @@ index 7e81a7e..ec1a505 100644
  
          Adw.PreferencesGroup {
 diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
-index efae061..fcd1df8 100644
+index 75e893d..7f33ca3 100644
 --- a/panels/privacy/cc-privacy-panel.c
 +++ b/panels/privacy/cc-privacy-panel.c
 @@ -20,6 +20,8 @@

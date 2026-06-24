@@ -21,29 +21,29 @@ functionality to generate and show an example report is also present.
  panels/privacy/cc-privacy-panel.c                  |   4 +-
  panels/privacy/gnome-privacy-panel.desktop.in      |   2 +-
  panels/privacy/meson.build                         |  27 +-
- panels/privacy/privacy.gresource.xml.in            |  23 +
+ ...vacy.gresource.xml => privacy.gresource.xml.in} |   4 +-
  .../telemetry/cc-telemetry-insights-example.blp    |  47 ++
  .../telemetry/cc-telemetry-insights-example.c      | 102 ++++
- .../telemetry/cc-telemetry-insights-example.h      |  32 ++
+ .../telemetry/cc-telemetry-insights-example.h}     |  14 +-
  panels/privacy/telemetry/cc-telemetry-page.blp     |  90 +++
  panels/privacy/telemetry/cc-telemetry-page.c       | 629 +++++++++++++++++++++
- panels/privacy/telemetry/cc-telemetry-page.h       |  33 ++
- panels/privacy/telemetry/meson.build               |  18 +
+ .../cc-telemetry-page.h}                           |   9 +-
+ .../privacy/{diagnostics => telemetry}/meson.build |   6 +-
  panels/privacy/telemetry/telemetry.css             |   8 +
  po/POTFILES.in                                     |   4 +
- 16 files changed, 1029 insertions(+), 12 deletions(-)
- create mode 100644 panels/privacy/privacy.gresource.xml.in
+ 16 files changed, 944 insertions(+), 24 deletions(-)
+ copy panels/privacy/{privacy.gresource.xml => privacy.gresource.xml.in} (89%)
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.blp
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.c
- create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.h
+ copy panels/{mouse/cc-mouse-test.h => privacy/telemetry/cc-telemetry-insights-example.h} (62%)
  create mode 100644 panels/privacy/telemetry/cc-telemetry-page.blp
  create mode 100644 panels/privacy/telemetry/cc-telemetry-page.c
- create mode 100644 panels/privacy/telemetry/cc-telemetry-page.h
- create mode 100644 panels/privacy/telemetry/meson.build
+ copy panels/privacy/{camera/cc-camera-page.h => telemetry/cc-telemetry-page.h} (73%)
+ copy panels/privacy/{diagnostics => telemetry}/meson.build (73%)
  create mode 100644 panels/privacy/telemetry/telemetry.css
 
 diff --git a/meson.build b/meson.build
-index c4e1272..ed4f6b8 100644
+index 79cd508..30888b4 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -353,6 +353,14 @@ endif
@@ -111,7 +111,7 @@ index 4ef1b86..7e81a7e 100644
    [subpage]
    $CcConnectivityPage {}
 diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
-index d6e3fd1..efae061 100644
+index f61d0d8..75e893d 100644
 --- a/panels/privacy/cc-privacy-panel.c
 +++ b/panels/privacy/cc-privacy-panel.c
 @@ -27,7 +27,7 @@
@@ -210,35 +210,31 @@ index 03078c7..5bdea29 100644
  panels_libs += static_library(
    cappletname,
    sources: sources,
-diff --git a/panels/privacy/privacy.gresource.xml.in b/panels/privacy/privacy.gresource.xml.in
-new file mode 100644
-index 0000000..2d44ce9
---- /dev/null
+diff --git a/panels/privacy/privacy.gresource.xml b/panels/privacy/privacy.gresource.xml.in
+similarity index 89%
+copy from panels/privacy/privacy.gresource.xml
+copy to panels/privacy/privacy.gresource.xml.in
+index 3d9612c..2d44ce9 100644
+--- a/panels/privacy/privacy.gresource.xml
 +++ b/panels/privacy/privacy.gresource.xml.in
-@@ -0,0 +1,23 @@
-+<?xml version="1.0" encoding="UTF-8"?>
-+<gresources>
-+  <gresource prefix="/org/gnome/control-center/privacy">
-+    <file preprocess="xml-stripblanks">bolt/cc-bolt-device-dialog.ui</file>
-+    <file preprocess="xml-stripblanks">bolt/cc-bolt-device-entry.ui</file>
-+    <file preprocess="xml-stripblanks">bolt/cc-bolt-page.ui</file>
-+    <file preprocess="xml-stripblanks">camera/cc-camera-page.ui</file>
-+    <file preprocess="xml-stripblanks">connectivity/cc-connectivity-page.ui</file>
+@@ -6,7 +6,8 @@
+     <file preprocess="xml-stripblanks">bolt/cc-bolt-page.ui</file>
+     <file preprocess="xml-stripblanks">camera/cc-camera-page.ui</file>
+     <file preprocess="xml-stripblanks">connectivity/cc-connectivity-page.ui</file>
+-    <file preprocess="xml-stripblanks">diagnostics/cc-diagnostics-page.ui</file>
 +    <file preprocess="xml-stripblanks">telemetry/cc-telemetry-page.ui</file>
 +@telemetry_insights_example_ui@
-+    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
-+    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
-+    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-help-dialog.ui</file>
-+    <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-page.ui</file>
-+    <file preprocess="xml-stripblanks">location/cc-location-page.ui</file>
-+    <file preprocess="xml-stripblanks">cc-privacy-panel.ui</file>
-+    <file preprocess="xml-stripblanks">screen/cc-screen-page.ui</file>
-+    <file preprocess="xml-stripblanks">usage/cc-usage-page.ui</file>
-+
+     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
+     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
+     <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-help-dialog.ui</file>
+@@ -16,6 +17,7 @@
+     <file preprocess="xml-stripblanks">screen/cc-screen-page.ui</file>
+     <file preprocess="xml-stripblanks">usage/cc-usage-page.ui</file>
+ 
 +    <file>telemetry/telemetry.css</file>
-+    <file>firmware-security/security-level.css</file>
-+  </gresource>
-+</gresources>
+     <file>firmware-security/security-level.css</file>
+   </gresource>
+ </gresources>
 diff --git a/panels/privacy/telemetry/cc-telemetry-insights-example.blp b/panels/privacy/telemetry/cc-telemetry-insights-example.blp
 new file mode 100644
 index 0000000..3f5ce2f
@@ -400,44 +396,39 @@ index 0000000..c3c36b0
 +                            -1);
 +  return GTK_WIDGET (self);
 +}
-diff --git a/panels/privacy/telemetry/cc-telemetry-insights-example.h b/panels/privacy/telemetry/cc-telemetry-insights-example.h
-new file mode 100644
-index 0000000..bb5f6cc
---- /dev/null
+diff --git a/panels/mouse/cc-mouse-test.h b/panels/privacy/telemetry/cc-telemetry-insights-example.h
+similarity index 62%
+copy from panels/mouse/cc-mouse-test.h
+copy to panels/privacy/telemetry/cc-telemetry-insights-example.h
+index ccd7515..bb5f6cc 100644
+--- a/panels/mouse/cc-mouse-test.h
 +++ b/panels/privacy/telemetry/cc-telemetry-insights-example.h
-@@ -0,0 +1,32 @@
+@@ -1,8 +1,8 @@
+-/* -*- mode: c; style: linux -*-
+- * 
+- * Copyright (C) 2012 Red Hat, Inc.
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
-+ *
+  *
+- * Written by: Ondrej Holy <oholy@redhat.com>
 + * Copyright (C) 2026 Canonical Ltd.
 + *
 + * Written by: Kat Kuo <kat.kuo@canonical.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2, or (at your option)
-+ * any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#pragma once
-+
-+#include <adwaita.h>
-+
-+G_BEGIN_DECLS
-+
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -24,9 +24,9 @@
+ 
+ G_BEGIN_DECLS
+ 
+-#define CC_TYPE_MOUSE_TEST (cc_mouse_test_get_type ())
+-G_DECLARE_FINAL_TYPE (CcMouseTest, cc_mouse_test, CC, MOUSE_TEST, AdwWindow)
 +#define CC_TYPE_TELEMETRY_INSIGHTS_EXAMPLE (cc_telemetry_insights_example_get_type ())
 +G_DECLARE_FINAL_TYPE (CcTelemetryInsightsExample, cc_telemetry_insights_example, CC, TELEMETRY_INSIGHTS_EXAMPLE, AdwWindow)
-+
+ 
+-GtkWidget *cc_mouse_test_new (void);
 +GtkWidget *cc_telemetry_insights_example_new (const gchar *report);
-+
-+G_END_DECLS
+ 
+ G_END_DECLS
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.blp b/panels/privacy/telemetry/cc-telemetry-page.blp
 new file mode 100644
 index 0000000..dca5f7b
@@ -1169,69 +1160,61 @@ index 0000000..0085ad3
 +                                              GTK_STYLE_PROVIDER (provider),
 +                                              GTK_STYLE_PROVIDER_PRIORITY_APPLICATION);
 +}
-diff --git a/panels/privacy/telemetry/cc-telemetry-page.h b/panels/privacy/telemetry/cc-telemetry-page.h
-new file mode 100644
-index 0000000..acb5f1a
---- /dev/null
+diff --git a/panels/privacy/camera/cc-camera-page.h b/panels/privacy/telemetry/cc-telemetry-page.h
+similarity index 73%
+copy from panels/privacy/camera/cc-camera-page.h
+copy to panels/privacy/telemetry/cc-telemetry-page.h
+index aed052e..acb5f1a 100644
+--- a/panels/privacy/camera/cc-camera-page.h
 +++ b/panels/privacy/telemetry/cc-telemetry-page.h
-@@ -0,0 +1,33 @@
-+/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
-+ *
+@@ -1,5 +1,6 @@
+ /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
+  *
 + * Copyright (C) 2026 Canonical Ltd.
-+ * Copyright (C) 2018 Red Hat, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
-+ *
+  * Copyright (C) 2018 Red Hat, Inc
+  *
+  * This program is free software; you can redistribute it and/or modify
+@@ -15,7 +16,9 @@
+  * You should have received a copy of the GNU General Public License
+  * along with this program; if not, see <http://www.gnu.org/licenses/>.
+  *
+- * Author: Matthias Clasen <mclasen@redhat.com>
 + * Author(s):
 + *   Kat Kuo <kat.kuo@canonical.com>
 + *   Matthias Clasen <mclasen@redhat.com>
-+ */
-+
-+#pragma once
-+
-+#include <adwaita.h>
-+
-+G_BEGIN_DECLS
-+
+  */
+ 
+ #pragma once
+@@ -24,7 +27,7 @@
+ 
+ G_BEGIN_DECLS
+ 
+-#define CC_TYPE_CAMERA_PAGE (cc_camera_page_get_type ())
+-G_DECLARE_FINAL_TYPE (CcCameraPage, cc_camera_page, CC, CAMERA_PAGE, AdwNavigationPage)
 +#define CC_TYPE_TELEMETRY_PAGE (cc_telemetry_page_get_type ())
 +G_DECLARE_FINAL_TYPE (CcTelemetryPage, cc_telemetry_page, CC, TELEMETRY_PAGE, AdwNavigationPage)
-+
-+G_END_DECLS
-diff --git a/panels/privacy/telemetry/meson.build b/panels/privacy/telemetry/meson.build
-new file mode 100644
-index 0000000..dffd7e8
---- /dev/null
+ 
+ G_END_DECLS
+diff --git a/panels/privacy/diagnostics/meson.build b/panels/privacy/telemetry/meson.build
+similarity index 73%
+copy from panels/privacy/diagnostics/meson.build
+copy to panels/privacy/telemetry/meson.build
+index 8fa2539..dffd7e8 100644
+--- a/panels/privacy/diagnostics/meson.build
 +++ b/panels/privacy/telemetry/meson.build
-@@ -0,0 +1,18 @@
-+ui_sources = files(
+@@ -1,7 +1,11 @@
+ ui_sources = files(
+-  'cc-diagnostics-page.blp',
 +  'cc-telemetry-page.blp',
-+)
-+
+ )
+ 
 +if enable_insights
 +  ui_sources += files('cc-telemetry-insights-example.blp')
 +endif
 +
-+ui_compiled = []
-+foreach ui_source : ui_sources
-+  ui_compiled += fs.name(fs.replace_suffix(ui_source, '.ui'))
-+endforeach
-+
-+blueprints += custom_target(
-+  input: ui_sources,
-+  output: ui_compiled,
-+  command: [blueprint_compiler, 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@', '@INPUT@']
-+)
+ ui_compiled = []
+ foreach ui_source : ui_sources
+   ui_compiled += fs.name(fs.replace_suffix(ui_source, '.ui'))
 diff --git a/panels/privacy/telemetry/telemetry.css b/panels/privacy/telemetry/telemetry.css
 new file mode 100644
 index 0000000..281d579

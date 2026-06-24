@@ -15,19 +15,19 @@ https://bugzilla.gnome.org/show_bug.cgi?id=737362
  panels/privacy/cc-privacy-panel.c                  |   2 +
  .../privacy/connectivity/cc-connectivity-page.blp  |  23 ++++
  panels/privacy/connectivity/cc-connectivity-page.c | 128 +++++++++++++++++++++
- panels/privacy/connectivity/cc-connectivity-page.h |  28 +++++
- panels/privacy/connectivity/meson.build            |  14 +++
+ .../connectivity/cc-connectivity-page.h}           |   7 +-
+ .../privacy/{location => connectivity}/meson.build |   2 +-
  panels/privacy/gnome-privacy-panel.desktop.in      |   2 +-
  panels/privacy/icons/meson.build                   |   1 +
  ...g.gnome.Settings-network-workgroup-symbolic.svg |   7 ++
  panels/privacy/meson.build                         |   6 +
  panels/privacy/privacy.gresource.xml               |   1 +
  po/POTFILES.in                                     |   1 +
- 12 files changed, 224 insertions(+), 1 deletion(-)
+ 12 files changed, 186 insertions(+), 6 deletions(-)
  create mode 100644 panels/privacy/connectivity/cc-connectivity-page.blp
  create mode 100644 panels/privacy/connectivity/cc-connectivity-page.c
- create mode 100644 panels/privacy/connectivity/cc-connectivity-page.h
- create mode 100644 panels/privacy/connectivity/meson.build
+ copy panels/{system/about/cc-about-page.h => privacy/connectivity/cc-connectivity-page.h} (78%)
+ copy panels/privacy/{location => connectivity}/meson.build (91%)
  create mode 100644 panels/privacy/icons/scalable/org.gnome.Settings-network-workgroup-symbolic.svg
 
 diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
@@ -61,7 +61,7 @@ index 10e6c51..4ef1b86 100644
    $CcFirmwareSecurityPage security_page {}
  }
 diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
-index 259f78f..d6e3fd1 100644
+index 4ae1421..f61d0d8 100644
 --- a/panels/privacy/cc-privacy-panel.c
 +++ b/panels/privacy/cc-privacy-panel.c
 @@ -26,6 +26,7 @@
@@ -243,60 +243,53 @@ index 0000000..f3b1928
 +    nm_client_new_async (self->cancellable, nm_client_ready_cb, self);
 +#endif
 +}
-diff --git a/panels/privacy/connectivity/cc-connectivity-page.h b/panels/privacy/connectivity/cc-connectivity-page.h
-new file mode 100644
-index 0000000..12c4074
---- /dev/null
+diff --git a/panels/system/about/cc-about-page.h b/panels/privacy/connectivity/cc-connectivity-page.h
+similarity index 78%
+copy from panels/system/about/cc-about-page.h
+copy to panels/privacy/connectivity/cc-connectivity-page.h
+index 254d6b4..12c4074 100644
+--- a/panels/system/about/cc-about-page.h
 +++ b/panels/privacy/connectivity/cc-connectivity-page.h
-@@ -0,0 +1,28 @@
-+/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
-+ *
+@@ -1,6 +1,6 @@
+ /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
+  *
+- * Copyright (C) 2017 Mohammed Sadiq <sadiq@sadiqpk.org>
 + * Copyright (C) 2020 Canonical Ltd
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#pragma once
-+
-+#include <adwaita.h>
-+
-+G_BEGIN_DECLS
-+
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+@@ -14,7 +14,6 @@
+  *
+  * You should have received a copy of the GNU General Public License
+  * along with this program; if not, see <http://www.gnu.org/licenses/>.
+- *
+  */
+ 
+ #pragma once
+@@ -23,7 +22,7 @@
+ 
+ G_BEGIN_DECLS
+ 
+-#define CC_TYPE_ABOUT_PAGE (cc_about_page_get_type ())
+-G_DECLARE_FINAL_TYPE (CcAboutPage, cc_about_page, CC, ABOUT_PAGE, AdwNavigationPage)
 +#define CC_TYPE_CONNECTIVITY_PAGE (cc_connectivity_page_get_type ())
 +G_DECLARE_FINAL_TYPE (CcConnectivityPage, cc_connectivity_page, CC, CONNECTIVITY_PAGE, AdwNavigationPage)
-+
-+G_END_DECLS
-diff --git a/panels/privacy/connectivity/meson.build b/panels/privacy/connectivity/meson.build
-new file mode 100644
-index 0000000..07f080a
---- /dev/null
+ 
+ G_END_DECLS
+diff --git a/panels/privacy/location/meson.build b/panels/privacy/connectivity/meson.build
+similarity index 91%
+copy from panels/privacy/location/meson.build
+copy to panels/privacy/connectivity/meson.build
+index e4f2b2f..07f080a 100644
+--- a/panels/privacy/location/meson.build
 +++ b/panels/privacy/connectivity/meson.build
-@@ -0,0 +1,14 @@
-+ui_sources = files(
+@@ -1,5 +1,5 @@
+ ui_sources = files(
+-  'cc-location-page.blp',
 +  'cc-connectivity-page.blp',
-+)
-+
-+ui_compiled = []
-+foreach ui_source : ui_sources
-+  ui_compiled += fs.name(fs.replace_suffix(ui_source, '.ui'))
-+endforeach
-+
-+blueprints += custom_target(
-+  input: ui_sources,
-+  output: ui_compiled,
-+  command: [blueprint_compiler, 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@', '@INPUT@']
-+)
+ )
+ 
+ ui_compiled = []
 diff --git a/panels/privacy/gnome-privacy-panel.desktop.in b/panels/privacy/gnome-privacy-panel.desktop.in
 index 5abe66b..f88fd44 100644
 --- a/panels/privacy/gnome-privacy-panel.desktop.in

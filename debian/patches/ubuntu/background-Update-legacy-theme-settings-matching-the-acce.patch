@@ -13,7 +13,7 @@ have no support for accent colors.
  1 file changed, 59 insertions(+)
 
 diff --git a/panels/background/cc-background-panel.c b/panels/background/cc-background-panel.c
-index 201d2ab..d88fc87 100644
+index 85abe06..4cde2d0 100644
 --- a/panels/background/cc-background-panel.c
 +++ b/panels/background/cc-background-panel.c
 @@ -46,6 +46,12 @@
@@ -27,10 +27,10 @@ index 201d2ab..d88fc87 100644
 +#define DEFAULT_ACCENT_COLOR "default"
 +
  
- struct _CcBackgroundPanel
- {
-@@ -105,6 +111,51 @@ transition_screen (CcBackgroundPanel *self)
-     g_warning ("Couldn't transition screen: %s", error->message);
+ struct _CcBackgroundPanel {
+     CcPanel parent_instance;
+@@ -86,6 +92,51 @@ transition_screen (CcBackgroundPanel *self)
+         g_warning ("Couldn't transition screen: %s", error->message);
  }
  
 +static void
@@ -79,27 +79,27 @@ index 201d2ab..d88fc87 100644
 +}
 +
  static void
- on_accent_color_toggled_cb (CcBackgroundPanel *self,
-                             GtkToggleButton   *toggle)
-@@ -273,6 +324,8 @@ set_color_scheme (CcBackgroundPanel   *self,
-   g_settings_set_enum (self->interface_settings,
-                        INTERFACE_COLOR_SCHEME_KEY,
-                        color_scheme);
+ on_accent_color_toggled_cb (CcBackgroundPanel *self, GtkToggleButton *toggle)
+ {
+@@ -232,6 +283,8 @@ set_color_scheme (CcBackgroundPanel *self, GDesktopColorScheme color_scheme)
+     transition_screen (self);
+ 
+     g_settings_set_enum (self->interface_settings, INTERFACE_COLOR_SCHEME_KEY, color_scheme);
 +
-+  update_yaru_accent_settings (self);
++    update_yaru_accent_settings (self);
  }
  
  /* Color schemes */
-@@ -582,6 +635,12 @@ cc_background_panel_init (CcBackgroundPanel *self)
-                            self,
-                            G_CONNECT_SWAPPED);
+@@ -511,6 +564,12 @@ cc_background_panel_init (CcBackgroundPanel *self)
+     g_signal_connect_object (self->interface_settings, "changed::" INTERFACE_ACCENT_COLOR_KEY,
+                              G_CALLBACK (reload_accent_color_toggles), self, G_CONNECT_SWAPPED);
  
-+  g_signal_connect_object (adw_style_manager_get_default (),
-+                           "notify::yaru-accent",
-+                           G_CALLBACK (update_yaru_accent_settings),
-+                           self,
-+                           G_CONNECT_SWAPPED);
++    g_signal_connect_object (adw_style_manager_get_default (),
++                             "notify::yaru-accent",
++                             G_CALLBACK (update_yaru_accent_settings),
++                             self,
++                             G_CONNECT_SWAPPED);
 +
-   g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION,
-                             G_DBUS_PROXY_FLAGS_NONE,
-                             NULL,
+     g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE, NULL, "org.gnome.Shell", "/org/gnome/Shell",
+                               "org.gnome.Shell", NULL, got_transition_proxy_cb, self);
+ }

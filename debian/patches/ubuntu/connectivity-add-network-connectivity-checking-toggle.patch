@@ -15,7 +15,7 @@ https://bugzilla.gnome.org/show_bug.cgi?id=737362
  panels/privacy/cc-privacy-panel.c                  |   2 +
  .../privacy/connectivity/cc-connectivity-page.blp  |  23 ++++
  panels/privacy/connectivity/cc-connectivity-page.c | 128 +++++++++++++++++++++
- .../connectivity/cc-connectivity-page.h}           |   7 +-
+ .../cc-connectivity-page.h}                        |   9 +-
  .../privacy/{location => connectivity}/meson.build |   2 +-
  panels/privacy/gnome-privacy-panel.desktop.in      |   2 +-
  panels/privacy/icons/meson.build                   |   1 +
@@ -23,10 +23,10 @@ https://bugzilla.gnome.org/show_bug.cgi?id=737362
  panels/privacy/meson.build                         |   6 +
  panels/privacy/privacy.gresource.xml               |   1 +
  po/POTFILES.in                                     |   1 +
- 12 files changed, 186 insertions(+), 6 deletions(-)
+ 12 files changed, 187 insertions(+), 7 deletions(-)
  create mode 100644 panels/privacy/connectivity/cc-connectivity-page.blp
  create mode 100644 panels/privacy/connectivity/cc-connectivity-page.c
- copy panels/{system/about/cc-about-page.h => privacy/connectivity/cc-connectivity-page.h} (78%)
+ copy panels/privacy/{usage/cc-usage-page.h => connectivity/cc-connectivity-page.h} (77%)
  copy panels/privacy/{location => connectivity}/meson.build (91%)
  create mode 100644 panels/privacy/icons/scalable/org.gnome.Settings-network-workgroup-symbolic.svg
 
@@ -61,25 +61,25 @@ index 10e6c51..4ef1b86 100644
    $CcFirmwareSecurityPage security_page {}
  }
 diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
-index 4ae1421..f61d0d8 100644
+index dfc3865..b046cc7 100644
 --- a/panels/privacy/cc-privacy-panel.c
 +++ b/panels/privacy/cc-privacy-panel.c
-@@ -26,6 +26,7 @@
- #include "bolt/cc-bolt-page.h"
- #endif
+@@ -27,6 +27,7 @@
  #include "camera/cc-camera-page.h"
+ #include "cc-list-row.h"
+ #include "cc-privacy-resources.h"
 +#include "connectivity/cc-connectivity-page.h"
  #include "diagnostics/cc-diagnostics-page.h"
  #include "firmware-security/cc-firmware-security-page.h"
- #include "cc-list-row.h"
-@@ -72,6 +73,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
-   gtk_widget_class_bind_template_child (widget_class, CcPrivacyPanel, location_row);
+ #include "location/cc-location-page.h"
+@@ -70,6 +71,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+     gtk_widget_class_bind_template_child (widget_class, CcPrivacyPanel, location_row);
  
-   g_type_ensure (CC_TYPE_CAMERA_PAGE);
-+  g_type_ensure (CC_TYPE_CONNECTIVITY_PAGE);
-   g_type_ensure (CC_TYPE_DIAGNOSTICS_PAGE);
-   g_type_ensure (CC_TYPE_FIRMWARE_SECURITY_PAGE);
-   g_type_ensure (CC_TYPE_LOCATION_PAGE);
+     g_type_ensure (CC_TYPE_CAMERA_PAGE);
++    g_type_ensure (CC_TYPE_CONNECTIVITY_PAGE);
+     g_type_ensure (CC_TYPE_DIAGNOSTICS_PAGE);
+     g_type_ensure (CC_TYPE_FIRMWARE_SECURITY_PAGE);
+     g_type_ensure (CC_TYPE_LOCATION_PAGE);
 diff --git a/panels/privacy/connectivity/cc-connectivity-page.blp b/panels/privacy/connectivity/cc-connectivity-page.blp
 new file mode 100644
 index 0000000..8139e87
@@ -243,38 +243,39 @@ index 0000000..f3b1928
 +    nm_client_new_async (self->cancellable, nm_client_ready_cb, self);
 +#endif
 +}
-diff --git a/panels/system/about/cc-about-page.h b/panels/privacy/connectivity/cc-connectivity-page.h
-similarity index 78%
-copy from panels/system/about/cc-about-page.h
+diff --git a/panels/privacy/usage/cc-usage-page.h b/panels/privacy/connectivity/cc-connectivity-page.h
+similarity index 77%
+copy from panels/privacy/usage/cc-usage-page.h
 copy to panels/privacy/connectivity/cc-connectivity-page.h
-index 254d6b4..12c4074 100644
---- a/panels/system/about/cc-about-page.h
+index 432586d..12c4074 100644
+--- a/panels/privacy/usage/cc-usage-page.h
 +++ b/panels/privacy/connectivity/cc-connectivity-page.h
 @@ -1,6 +1,6 @@
  /* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
   *
-- * Copyright (C) 2017 Mohammed Sadiq <sadiq@sadiqpk.org>
+- * Copyright (C) 2018 Red Hat, Inc
 + * Copyright (C) 2020 Canonical Ltd
   *
   * This program is free software; you can redistribute it and/or modify
   * it under the terms of the GNU General Public License as published by
-@@ -14,7 +14,6 @@
+@@ -14,8 +14,6 @@
   *
   * You should have received a copy of the GNU General Public License
   * along with this program; if not, see <http://www.gnu.org/licenses/>.
 - *
+- * Author: Matthias Clasen <mclasen@redhat.com>
   */
  
  #pragma once
-@@ -23,7 +22,7 @@
+@@ -24,6 +22,7 @@
  
  G_BEGIN_DECLS
  
--#define CC_TYPE_ABOUT_PAGE (cc_about_page_get_type ())
--G_DECLARE_FINAL_TYPE (CcAboutPage, cc_about_page, CC, ABOUT_PAGE, AdwNavigationPage)
+-#define CC_TYPE_USAGE_PAGE (cc_usage_page_get_type ())
+-G_DECLARE_FINAL_TYPE (CcUsagePage, cc_usage_page, CC, USAGE_PAGE, AdwNavigationPage);
 +#define CC_TYPE_CONNECTIVITY_PAGE (cc_connectivity_page_get_type ())
 +G_DECLARE_FINAL_TYPE (CcConnectivityPage, cc_connectivity_page, CC, CONNECTIVITY_PAGE, AdwNavigationPage)
- 
++
  G_END_DECLS
 diff --git a/panels/privacy/location/meson.build b/panels/privacy/connectivity/meson.build
 similarity index 91%
@@ -357,7 +358,7 @@ index 4360b10..83d93a5 100644
    cappletname,
    sources: sources,
 diff --git a/panels/privacy/privacy.gresource.xml b/panels/privacy/privacy.gresource.xml
-index e8e2863..3d9612c 100644
+index 1664999..0670aa6 100644
 --- a/panels/privacy/privacy.gresource.xml
 +++ b/panels/privacy/privacy.gresource.xml
 @@ -5,6 +5,7 @@
@@ -369,7 +370,7 @@ index e8e2863..3d9612c 100644
      <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-boot-dialog.ui</file>
      <file preprocess="xml-stripblanks">firmware-security/cc-firmware-security-dialog.ui</file>
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index f732210..7e660fb 100644
+index c8b7d9f..89927a7 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
 @@ -158,6 +158,7 @@ panels/privacy/bolt/cc-bolt-device-entry.c

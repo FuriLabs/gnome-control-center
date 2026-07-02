@@ -1,4 +1,4 @@
-gnome-control-center (1:51~alpha-1) UNRELEASED; urgency=medium
+gnome-control-center (1:51~alpha-0ubuntu1) stonking; urgency=medium
 
   * Merge with Debian 1:50.3-1. Remaining changes:
     + Add gnome-control-center-faces package to share with unity-control-center
@@ -23,11 +23,14 @@ gnome-control-center (1:51~alpha-1) UNRELEASED; urgency=medium
     + debian/rules: Enable insights integration
     + debian/rules: set SSHD_SOCKET=ssh.socket via CPPFLAGS in debian/rules.
     + Add misc patches
+  * New upstream release (LP: #2157636)
+  * d/rules: Toggle ssh_socket_activation
+  * d/control: Bump minimum gtk4
+  * d/control: Build-Depends on libgnome-qr-gtk-4-dev
   * d/p: Drop patches applied upstream
-  * d/p/u: Refresh patches
-  * New upstream release
+  * d/p: Rebase patches
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Wed, 24 Jun 2026 16:36:39 +0200
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 02 Jul 2026 16:17:19 +0200
 
 gnome-control-center (1:50.3-1) unstable; urgency=medium
 

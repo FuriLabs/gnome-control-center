@@ -1,3 +1,49 @@
+============
+Version 50.3
+============
+
+- Various translation updates
+
+============
+Version 50.2
+============
+
+- Various translation updates
+
+Device Security
+- Make labels fit in mobile width
+
+Global Shortcuts
+- Relas app-id validation requirements
+
+Notifications
+- Fix "Show Content" notification setting
+
+System
+- Give "Software Updates" row a "button" accessible role
+
+Wellbeing
+- Make lables fit into mobile width
+
+=============
+Version 50.1
+=============
+
+- Various translation updates
+
+Accessibility
+- Fix keyboard navigation between cursor sizes
+
+Display
+- Correct the type of num_scales counter
+
+Privacy
+- Fix memory leak in camera page
+- Fix memory leak in location page
+
+Users
+- Chain up dispose in crop area widget
+
 =============
 Version 50.0
 =============

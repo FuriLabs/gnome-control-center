@@ -1,8 +1,13 @@
-gnome-control-center (1:50.3-0ubuntu0.1) UNRELEASED; urgency=medium
+gnome-control-center (1:50.3-0ubuntu0.1) resolute; urgency=medium
 
   * New upstream bugfix version (LP: #2159018)
+  * d/p: Drop patches applied upstream:
+    - camera-page-Do-not-leak-AppInfo.patch
+    - location-page-Do-not-leak-app-info-and-time.patch
+    - global-shortcuts-provider-Relax-app-id-validation.patch
+    - libgxdp-settings-Properly-translate-text-scaling-factor.patch
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Fri, 03 Jul 2026 11:14:19 +0200
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Mon, 06 Jul 2026 14:28:18 +0200
 
 gnome-control-center (1:50.0-0ubuntu6.1) resolute; urgency=medium
 

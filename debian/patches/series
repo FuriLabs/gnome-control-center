@@ -38,3 +38,4 @@ a11y-Add-button-role-to-avatars.patch
 a11y-fix-accessibility-when-choosing-a-background.patch
 ubuntu/remote-desktop-sharing-handle-locked-keyring.patch
 lp2161027-fix-domain-validate-timeout.patch
+ubuntu/system-users-Keep-fingerprint-add-print-popover-visible-w.patch

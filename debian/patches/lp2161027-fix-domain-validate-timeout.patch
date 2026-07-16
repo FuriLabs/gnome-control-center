@@ -1,0 +1,53 @@
+From: Philip Withnall <pwithnall@gnome.org>
+Date: Mon, 3 Mar 2025 17:30:28 +0000
+Subject: system: Fix return type on a GTimeoutSource callback
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+This is a demonstration of why it’s important to fix compiler warnings:
+this one could have caused a crash or misbehaviour, depending on the
+stack/register state, as the caller was expecting a return value from
+the `GSourceFunc`, but one wasn’t being provided.
+
+Signed-off-by: Philip Withnall <pwithnall@gnome.org>
+
+Origin: backport, https://gitlab.gnome.org/GNOME/gnome-control-center/-/commit/7a95adbff458a4fd53dd8acf598370172dee60ea
+Bug-Ubuntu: https://bugs.launchpad.net/bugs/2161027
+---
+ panels/system/users/cc-enterprise-login-dialog.c | 188 ++++++++++++-----------
+ 1 file changed, 96 insertions(+), 92 deletions(-)
+--- a/panels/system/users/cc-enterprise-login-dialog.c
++++ b/panels/system/users/cc-enterprise-login-dialog.c
+@@ -557,9 +557,11 @@
+   g_list_free_full (realms, g_object_unref);
+ }
+ 
+-static void
+-domain_validate (CcEnterpriseLoginDialog *self)
++static gboolean
++domain_validate (void *user_data)
+ {
++  CcEnterpriseLoginDialog *self = CC_ENTERPRISE_LOGIN_DIALOG (user_data);
++
+   self->domain_timeout_id = 0;
+ 
+   /* This is needed to stop previous calls to avoid rewriting feedback. */
+@@ -572,6 +574,8 @@
+                              self->cancellable,
+                              realm_manager_discover_cb,
+                              g_object_ref (self));
++
++  return G_SOURCE_REMOVE;
+ }
+ 
+ static void
+@@ -593,7 +597,7 @@
+     }
+ 
+   cc_entry_feedback_update (self->domain_feedback, "process-working-symbolic", _("Checking domain…"));
+-  self->domain_timeout_id = g_timeout_add (DOMAIN_CHECK_TIMEOUT, (GSourceFunc)domain_validate, self);
++  self->domain_timeout_id = g_timeout_add (DOMAIN_CHECK_TIMEOUT, domain_validate, self);
+ }
+ 
+ static void

@@ -1,3 +1,9 @@
+gnome-control-center (1:51~alpha-0ubuntu1.1) stonking; urgency=medium
+
+  * Add Ubuntu Certification page
+
+ -- Sergio Costas Rodriguez <sergio.costas@canonical.com>  Fri, 10 Jul 2026 11:59:00 +0200
+
 gnome-control-center (1:51~alpha-0ubuntu1) stonking; urgency=medium
 
   * Merge with Debian 1:50.3-1. Remaining changes:

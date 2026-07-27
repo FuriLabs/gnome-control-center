@@ -21,8 +21,8 @@ varlink-based protocol.
  .../ubuntu-certified/cc-ubuntu-certified-page.blp  | 149 ++++++
  .../ubuntu-certified/cc-ubuntu-certified-page.c    | 286 +++++++++++
  .../ubuntu-certified/cc-ubuntu-certified-page.h}   |   5 +-
- .../gnome-ubuntu-certified-panel.desktop.in}       |  10 +-
  .../{region => ubuntu-certified}/meson.build       |  10 +-
+ .../ubuntu-certified-panel.desktop.in}             |  10 +-
  po/POTFILES.in                                     |   3 +
  shell/cc-application.c                             |  19 +-
  shell/cc-panel-loader.c                            |   1 +
@@ -42,8 +42,8 @@ varlink-based protocol.
  create mode 100644 panels/system/ubuntu-certified/cc-ubuntu-certified-page.blp
  create mode 100644 panels/system/ubuntu-certified/cc-ubuntu-certified-page.c
  copy panels/{applications/cc-default-apps-page.h => system/ubuntu-certified/cc-ubuntu-certified-page.h} (81%)
- copy panels/{background/gnome-background-panel.desktop.in => system/ubuntu-certified/gnome-ubuntu-certified-panel.desktop.in} (65%)
- copy panels/system/{region => ubuntu-certified}/meson.build (74%)
+ copy panels/system/{region => ubuntu-certified}/meson.build (75%)
+ copy panels/{background/gnome-background-panel.desktop.in => system/ubuntu-certified/ubuntu-certified-panel.desktop.in} (65%)
  create mode 100755 tests/certification_emulator.py
  create mode 100644 tests/certified_ubuntu/meson.build
  create mode 100644 tests/certified_ubuntu/test-certified-ubuntu.c
@@ -1647,43 +1647,16 @@ index ea35f79..dc08d47 100644
 +G_DECLARE_FINAL_TYPE (CcUbuntuCertifiedPage, cc_ubuntu_certified_page, CC, UBUNTU_CERTIFIED_PAGE, AdwNavigationPage)
 +
  G_END_DECLS
-diff --git a/panels/background/gnome-background-panel.desktop.in b/panels/system/ubuntu-certified/gnome-ubuntu-certified-panel.desktop.in
-similarity index 65%
-copy from panels/background/gnome-background-panel.desktop.in
-copy to panels/system/ubuntu-certified/gnome-ubuntu-certified-panel.desktop.in
-index a6a044c..10660f4 100644
---- a/panels/background/gnome-background-panel.desktop.in
-+++ b/panels/system/ubuntu-certified/gnome-ubuntu-certified-panel.desktop.in
-@@ -1,9 +1,9 @@
- [Desktop Entry]
--Name=Appearance
--Comment=Change your background image or the UI colors
--Exec=gnome-control-center background
-+Name=Ubuntu Certified
-+Comment=Check your device certification status
-+Exec=gnome-control-center system ubuntu-certified
- # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
--Icon=org.gnome.Settings-appearance-symbolic
-+Icon=org.canonical.certified_neutral-symbolic.svg
- Terminal=false
- Type=Application
- NoDisplay=true
-@@ -11,4 +11,4 @@ StartupNotify=true
- Categories=GNOME;GTK;Settings;DesktopSettings;X-GNOME-Settings-Panel;X-GNOME-PersonalizationSettings;
- OnlyShowIn=GNOME;
- # Translators: Search terms to find the Appearance panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
--Keywords=Background;Wallpaper;Screen;Desktop;Style;Light;Dark;Appearance;
-+Keywords=Ubuntu;Certificate
 diff --git a/panels/system/region/meson.build b/panels/system/ubuntu-certified/meson.build
-similarity index 74%
+similarity index 75%
 copy from panels/system/region/meson.build
 copy to panels/system/ubuntu-certified/meson.build
-index 44fa40e..a063317 100644
+index 44fa40e..e9ce3e6 100644
 --- a/panels/system/region/meson.build
 +++ b/panels/system/ubuntu-certified/meson.build
 @@ -1,4 +1,4 @@
 -desktop = 'gnome-region-panel.desktop'
-+desktop = 'gnome-ubuntu-certified-panel.desktop'
++desktop = 'ubuntu-certified-panel.desktop'
  i18n.merge_file(
    type: 'desktop',
    input: desktop + '.in',
@@ -1706,6 +1679,33 @@ index 44fa40e..a063317 100644
 +install_data(
 +  install_dir: join_paths(control_center_datadir, 'icons')
 +)
+diff --git a/panels/background/gnome-background-panel.desktop.in b/panels/system/ubuntu-certified/ubuntu-certified-panel.desktop.in
+similarity index 65%
+copy from panels/background/gnome-background-panel.desktop.in
+copy to panels/system/ubuntu-certified/ubuntu-certified-panel.desktop.in
+index a6a044c..10660f4 100644
+--- a/panels/background/gnome-background-panel.desktop.in
++++ b/panels/system/ubuntu-certified/ubuntu-certified-panel.desktop.in
+@@ -1,9 +1,9 @@
+ [Desktop Entry]
+-Name=Appearance
+-Comment=Change your background image or the UI colors
+-Exec=gnome-control-center background
++Name=Ubuntu Certified
++Comment=Check your device certification status
++Exec=gnome-control-center system ubuntu-certified
+ # Translators: Do NOT translate or transliterate this text (this is an icon file name)!
+-Icon=org.gnome.Settings-appearance-symbolic
++Icon=org.canonical.certified_neutral-symbolic.svg
+ Terminal=false
+ Type=Application
+ NoDisplay=true
+@@ -11,4 +11,4 @@ StartupNotify=true
+ Categories=GNOME;GTK;Settings;DesktopSettings;X-GNOME-Settings-Panel;X-GNOME-PersonalizationSettings;
+ OnlyShowIn=GNOME;
+ # Translators: Search terms to find the Appearance panel. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
+-Keywords=Background;Wallpaper;Screen;Desktop;Style;Light;Dark;Appearance;
++Keywords=Ubuntu;Certificate
 diff --git a/po/POTFILES.in b/po/POTFILES.in
 index 56d4332..f69fcf6 100644
 --- a/po/POTFILES.in

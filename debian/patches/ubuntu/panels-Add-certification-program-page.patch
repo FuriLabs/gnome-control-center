@@ -1707,7 +1707,7 @@ index a6a044c..10660f4 100644
 -Keywords=Background;Wallpaper;Screen;Desktop;Style;Light;Dark;Appearance;
 +Keywords=Ubuntu;Certificate
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index 56d4332..f69fcf6 100644
+index 56d4332..f1c12b3 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
 @@ -227,6 +227,9 @@ panels/system/remote-desktop/org.gnome.controlcenter.remote-session-helper.polic
@@ -1715,8 +1715,8 @@ index 56d4332..f69fcf6 100644
  panels/system/secure-shell/cc-secure-shell-page.c
  panels/system/secure-shell/org.gnome.controlcenter.remote-login-helper.policy.in.in
 +panels/system/ubuntu-certified/ubuntu-certified-panel.desktop.in
-+panels/system/ubuntu-certified/ubuntu-certified-page.c
-+panels/system/ubuntu-certified/ubuntu-certified-page.blp
++panels/system/ubuntu-certified/cc-ubuntu-certified-page.c
++panels/system/ubuntu-certified/cc-ubuntu-certified-page.blp
  panels/system/users/cc-add-user-dialog.blp
  panels/system/users/cc-add-user-dialog.c
  panels/system/users/cc-avatar-chooser.blp

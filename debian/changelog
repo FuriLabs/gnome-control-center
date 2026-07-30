@@ -1,3 +1,10 @@
+gnome-control-center (1:51~alpha-0ubuntu4) stonking; urgency=medium
+
+  [ Sergio Costas Rodriguez ]
+  * Fix searching for the certification panel
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Thu, 30 Jul 2026 18:39:58 +0200
+
 gnome-control-center (1:51~alpha-0ubuntu3) stonking; urgency=medium
 
   [ Sergio Costas Rodriguez ]

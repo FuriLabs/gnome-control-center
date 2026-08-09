@@ -294,8 +294,8 @@ on_manager_proxy (GObject *object, GAsyncResult *res, gpointer user_data)
 
     g_debug ("Fprintd manager connected");
 
-    cc_fprintd_manager_call_get_devices (fprintd_manager, g_task_get_cancellable (task), on_devices_list,
-                                         g_object_ref (task));
+    cc_fprintd_manager_call_get_devices (fprintd_manager, G_DBUS_CALL_FLAGS_NONE, -1, g_task_get_cancellable (task),
+                                         on_devices_list, g_object_ref (task));
 }
 
 static void
@@ -399,6 +399,18 @@ update_state_callback (GObject *object, GAsyncResult *res, gpointer user_data)
         data->callback (self, state, data->user_data, error);
 }
 
+static gboolean
+is_no_enrolled_prints_error (GError *error)
+{
+    g_autofree char *dbus_error = NULL;
+
+    if (!error)
+        return FALSE;
+
+    dbus_error = g_dbus_error_get_remote_error (error);
+    return g_str_equal (dbus_error, CC_FPRINTD_NAME ".Error.NoEnrolledPrints");
+}
+
 static void
 on_device_list_enrolled (GObject *object, GAsyncResult *res, gpointer user_data)
 {
@@ -416,17 +428,13 @@ on_device_list_enrolled (GObject *object, GAsyncResult *res, gpointer user_data)
 
     data->waiting_devices--;
 
-    if (error) {
-        g_autofree char *dbus_error = g_dbus_error_get_remote_error (error);
+    if (error && !is_no_enrolled_prints_error (error)) {
+        if (data->waiting_devices == 0)
+            g_task_return_error (task, g_steal_pointer (&error));
+        else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+            g_warning ("Impossible to list enrolled fingers: %s", error->message);
 
-        if (!g_str_equal (dbus_error, CC_FPRINTD_NAME ".Error.NoEnrolledPrints")) {
-            if (data->waiting_devices == 0)
-                g_task_return_error (task, g_steal_pointer (&error));
-            else if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-                g_warning ("Impossible to list enrolled fingers: %s", error->message);
-
-            return;
-        }
+        return;
     }
 
     num_enrolled_fingers = enrolled_fingers ? g_strv_length (enrolled_fingers) : 0;
@@ -474,8 +482,9 @@ on_manager_devices_list (GObject *object, GAsyncResult *res, gpointer user_data)
         g_debug ("Connected to device %s, looking for enrolled fingers", cc_fprintd_device_get_name (device));
 
         data->waiting_devices++;
-        cc_fprintd_device_call_list_enrolled_fingers (device, user_name, g_task_get_cancellable (task),
-                                                      on_device_list_enrolled, g_object_ref (task));
+        cc_fprintd_device_call_list_enrolled_fingers (
+            device, user_name, G_DBUS_CALL_FLAGS_ALLOW_INTERACTIVE_AUTHORIZATION, -1, g_task_get_cancellable (task),
+            on_device_list_enrolled, g_object_ref (task));
     }
 }
 
@@ -488,8 +497,12 @@ cc_fingerprint_manager_update_state (CcFingerprintManager *self, CcFingerprintSt
 
     g_return_if_fail (priv->current_task == NULL);
 
-    if (act_user_get_uid (priv->user) != getuid () || !act_user_is_local_account (priv->user)) {
+    if (act_user_get_uid (priv->user) != getuid ()) {
         set_state (self, CC_FINGERPRINT_STATE_NONE);
+
+        if (callback)
+            callback (self, CC_FINGERPRINT_STATE_NONE, user_data, NULL);
+
         return;
     }
 
@@ -525,4 +538,95 @@ cc_fingerprint_manager_get_user (CcFingerprintManager *self)
     g_return_val_if_fail (CC_IS_FINGERPRINT_MANAGER (self), NULL);
 
     return priv->user;
+}
+
+typedef struct {
+    guint waiting_devices;
+} DeviceDeleteData;
+
+static void
+on_fingerprint_deleted_cb (GObject *object, GAsyncResult *res, gpointer user_data)
+{
+    g_autoptr(GTask) task = G_TASK (user_data);
+    g_autoptr(GError) error = NULL;
+    DeviceDeleteData *delete_data = g_task_get_task_data (task);
+
+    cc_fprintd_device_call_delete_enrolled_fingers_finish (CC_FPRINTD_DEVICE (object), res, &error);
+
+    if (error && !is_no_enrolled_prints_error (error)) {
+        if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+            g_warning ("Impossible to delete enrolled fingers: %s", error->message);
+
+        g_task_return_error (task, g_steal_pointer (&error));
+        return;
+    }
+
+    if (--delete_data->waiting_devices == 0)
+        g_task_return_boolean (task, TRUE);
+}
+
+static void
+on_manager_delete_fingers_devices_list_cb (GObject *object, GAsyncResult *res, gpointer user_data)
+{
+    CcFingerprintManager *self = CC_FINGERPRINT_MANAGER (object);
+    CcFingerprintManagerPrivate *priv = cc_fingerprint_manager_get_instance_private (self);
+    g_autolist(CcFprintdDevice) fprintd_devices = NULL;
+    g_autoptr(GTask) task = G_TASK (user_data);
+    g_autoptr(GError) error = NULL;
+    DeviceDeleteData *delete_data;
+    const char *user_name;
+
+    fprintd_devices = cc_fingerprint_manager_get_devices_finish (self, res, &error);
+
+    if (error) {
+        g_task_return_error (task, g_steal_pointer (&error));
+        return;
+    }
+
+    if (fprintd_devices == NULL) {
+        g_debug ("No fingerprint devices found");
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+    user_name = act_user_get_user_name (priv->user);
+    delete_data = g_new0 (DeviceDeleteData, 1);
+    g_task_set_task_data (task, delete_data, g_free);
+
+    for (GList *l = fprintd_devices; l; l = l->next) {
+        CcFprintdDevice *device = l->data;
+
+        g_debug ("Connected to device %s, deleting enrolled fingers for user %s", cc_fprintd_device_get_name (device),
+                 user_name);
+
+        delete_data->waiting_devices++;
+        cc_fprintd_device_call_delete_enrolled_fingers (device, user_name, G_DBUS_CALL_FLAGS_NONE, -1,
+                                                        g_task_get_cancellable (task), on_fingerprint_deleted_cb,
+                                                        g_object_ref (task));
+    }
+}
+
+void
+cc_fingerprint_manager_delete_enrolled_fingers (CcFingerprintManager *self, GCancellable *cancellable,
+                                                GAsyncReadyCallback res, gpointer user_data)
+{
+    g_autoptr(GTask) task = g_task_new (self, cancellable, res, user_data);
+
+    if (cc_fingerprint_manager_get_state (self) == CC_FINGERPRINT_STATE_DISABLED) {
+        g_debug ("Fingerprint manager is disabled, no enrolled fingers to delete");
+        g_task_return_boolean (task, TRUE);
+        return;
+    }
+
+    cc_fingerprint_manager_get_devices (self, cancellable, on_manager_delete_fingers_devices_list_cb,
+                                        g_object_ref (task));
+}
+
+gboolean
+cc_fingerprint_manager_delete_enrolled_fingers_finish (CcFingerprintManager *fp_manager, GAsyncResult *res,
+                                                       GError **error)
+{
+    g_return_val_if_fail (g_task_is_valid (res, fp_manager), FALSE);
+
+    return g_task_propagate_boolean (G_TASK (res), error);
 }

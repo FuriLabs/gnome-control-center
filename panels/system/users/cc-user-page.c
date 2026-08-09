@@ -148,13 +148,15 @@ would_demote_only_admin (ActUser *user)
 static gboolean
 get_autologin_possible (ActUser *user)
 {
+    gboolean homed;
     gboolean locked;
     gboolean set_password_at_login;
 
+    homed = act_user_uses_homed (user);
     locked = act_user_get_locked (user);
     set_password_at_login = (act_user_get_password_mode (user) == ACT_USER_PASSWORD_MODE_SET_AT_LOGIN);
 
-    return !(locked || set_password_at_login);
+    return !(homed || locked || set_password_at_login);
 }
 
 static gchar *
@@ -345,7 +347,7 @@ update_fingerprint_row_state (CcUserPage *self, GParamSpec *spec, CcFingerprintM
     CcFingerprintState state = cc_fingerprint_manager_get_state (manager);
     gboolean visible = FALSE;
 
-    visible = (act_user_get_uid (self->user) == getuid () && act_user_is_local_account (self->user)
+    visible = (act_user_get_uid (self->user) == getuid ()
                && (self->login_screen_settings
                    && g_settings_get_boolean (self->login_screen_settings, "enable-fingerprint-authentication")));
     gtk_widget_set_visible (GTK_WIDGET (self->fingerprint_row), visible);
@@ -384,12 +386,29 @@ delete_user_done (ActUserManager *manager, GAsyncResult *res, void *user_data)
 }
 
 static void
-remove_local_user_response (CcUserPage *self)
+delete_fingerprints_done (CcFingerprintManager *manager, GAsyncResult *res, void *user_data)
 {
+    CcUserPage *self = user_data;
     gboolean remove_files;
+    g_autoptr(GError) error = NULL;
 
     g_assert (ADW_IS_SWITCH_ROW (self->remove_local_files_choice));
 
+    if (!cc_fingerprint_manager_delete_enrolled_fingers_finish (manager, res, &error)) {
+        if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+            g_critical ("Failed to delete enrolled fingerprints: %s", error->message);
+    } else {
+        g_debug ("Deleted enrolled fingerprints for user %s", act_user_get_user_name (self->user));
+    }
+
+    remove_files = adw_switch_row_get_active (self->remove_local_files_choice);
+    act_user_manager_delete_user_async (act_user_manager_get_default (), self->user, remove_files, NULL,
+                                        (GAsyncReadyCallback) delete_user_done, NULL);
+}
+
+static void
+remove_local_user_response (CcUserPage *self)
+{
     /* remove autologin */
     if (act_user_get_automatic_login (self->user)) {
         act_user_set_automatic_login (self->user, FALSE);
@@ -398,17 +417,30 @@ remove_local_user_response (CcUserPage *self)
     /* Prevent user to click again while deleting, issue #2341 */
     gtk_widget_set_sensitive (GTK_WIDGET (self->remove_user_button), FALSE);
 
-    remove_files = adw_switch_row_get_active (self->remove_local_files_choice);
-    act_user_manager_delete_user_async (act_user_manager_get_default (), self->user, remove_files, NULL,
-                                        (GAsyncReadyCallback) delete_user_done, NULL);
+    cc_fingerprint_manager_delete_enrolled_fingers (self->fingerprint_manager, NULL,
+                                                    (GAsyncReadyCallback) delete_fingerprints_done, self);
 }
 
 static void
 remove_user (CcUserPage *self)
 {
+    gboolean homed = act_user_uses_homed (self->user);
+
     // TODO: Handle enterprise accounts
     adw_alert_dialog_format_heading (self->remove_local_user_dialog, _("Remove %s?"),
                                                                        get_real_or_user_name (self->user));
+
+    if (homed)
+        adw_alert_dialog_set_body (self->remove_local_user_dialog,
+                                   _("The user's files and settings will be deleted, and they will not be able to use this device once their account has been removed"));
+    else
+        adw_alert_dialog_set_body (
+            self->remove_local_user_dialog,
+            _("The user will not be able to use this device once their account has been removed"));
+
+    adw_switch_row_set_active (self->remove_local_files_choice, homed);
+    gtk_widget_set_visible (adw_alert_dialog_get_extra_child (self->remove_local_user_dialog), !homed);
+
     adw_dialog_present (ADW_DIALOG (self->remove_local_user_dialog), GTK_WIDGET (self));
 }
 
@@ -698,12 +730,17 @@ cc_user_page_set_user (CcUserPage *self, ActUser *user, GPermission *permission)
     user_language = get_user_language (user);
     cc_list_row_set_secondary_label (self->language_row, user_language);
 
-    if (!self->fingerprint_manager) {
+    if (!self->fingerprint_manager
+        || g_strcmp0 (act_user_get_user_name (cc_fingerprint_manager_get_user (self->fingerprint_manager)),
+                      act_user_get_user_name (user))
+               != 0) {
+        g_clear_object (&self->fingerprint_manager);
         self->fingerprint_manager = cc_fingerprint_manager_new (user);
         g_signal_connect_object (self->fingerprint_manager, "notify::state", G_CALLBACK (update_fingerprint_row_state),
                                  self, G_CONNECT_SWAPPED);
-        update_fingerprint_row_state (self, NULL, self->fingerprint_manager);
     }
+
+    update_fingerprint_row_state (self, NULL, self->fingerprint_manager);
 
     cc_permission_infobar_set_permission (self->permission_infobar, permission);
     g_object_bind_property (permission, "allowed", self, "locked", G_BINDING_SYNC_CREATE | G_BINDING_INVERT_BOOLEAN);

@@ -55,12 +55,25 @@ template $CcAboutPage: Adw.NavigationPage {
           title: _("Software Information");
 
           Adw.ActionRow gnome_version_row {
-            title: _("GNOME Version");
+            title: _("GNOME Shell Version");
             subtitle-selectable: true;
+            visible: false;
 
             styles [
               "property",
             ]
+
+            [suffix]
+            Button {
+              icon-name: "adw-external-link-symbolic";
+              valign: center;
+              tooltip-text: _("Release Notes");
+              clicked => $on_release_notes_button_clicked_cb(template);
+
+              styles [
+                "flat",
+              ]
+            }
           }
 
           Adw.ActionRow os_name_row {
@@ -119,7 +132,6 @@ template $CcAboutPage: Adw.NavigationPage {
               "property",
             ]
           }
-
         }
 
         Adw.PreferencesGroup hardware_group {

@@ -1,8 +1,18 @@
-gnome-control-center (1:51~beta-1) UNRELEASED; urgency=medium
+gnome-control-center (1:51~beta-1) unstable; urgency=medium
 
+  [ Jeremy Bícha ]
   * New upstream release
+  * Add patch to point to the 50 release notes instead of 51
+  * Add 2 patches to revert changes that require newer gtk4 & accountsservice
+  * Remove remote desktop patch applied in new release
+  * Remove obsolete Build-Depends: libhandy-1-dev
+  * Update minimum gnome-desktop and gsettings-desktop-schemas
 
- -- Jeremy Bícha <jbicha@ubuntu.com>  Sun, 09 Aug 2026 14:11:12 +0200
+  [ Alessandro Astone ]
+  * Add Build-Depends: libgnome-qr-gtk-4-dev
+  * Rebase patches
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Sun, 09 Aug 2026 14:46:19 +0200
 
 gnome-control-center (1:50.3-1) unstable; urgency=medium
 

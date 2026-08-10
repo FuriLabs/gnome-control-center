@@ -1707,10 +1707,10 @@ index 44fa40e..a063317 100644
 +  install_dir: join_paths(control_center_datadir, 'icons')
 +)
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index 56d4332..924a02d 100644
+index e034bab..84214e4 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
-@@ -227,6 +227,9 @@ panels/system/remote-desktop/org.gnome.controlcenter.remote-session-helper.polic
+@@ -229,6 +229,9 @@ panels/system/remote-desktop/org.gnome.controlcenter.remote-session-helper.polic
  panels/system/secure-shell/cc-secure-shell-page.blp
  panels/system/secure-shell/cc-secure-shell-page.c
  panels/system/secure-shell/org.gnome.controlcenter.remote-login-helper.policy.in.in

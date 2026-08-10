@@ -399,10 +399,10 @@ index c7ecceb..4a9d7fd 100644
  
  static void
 diff --git a/po/POTFILES.in b/po/POTFILES.in
-index 04292f4..56d4332 100644
+index 30191cc..e034bab 100644
 --- a/po/POTFILES.in
 +++ b/po/POTFILES.in
-@@ -180,6 +180,7 @@ panels/privacy/telemetry/cc-telemetry-page.c
+@@ -182,6 +182,7 @@ panels/privacy/telemetry/org.gnome.controlcenter.insights-system-opt-out.policy.
  panels/privacy/usage/cc-usage-page.blp
  panels/search/cc-search-locations-page.blp
  panels/search/cc-search-locations-page.c

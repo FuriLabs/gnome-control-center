@@ -1,3 +1,19 @@
+gnome-control-center (1:51~beta-1) unstable; urgency=medium
+
+  [ Jeremy Bícha ]
+  * New upstream release
+  * Add patch to point to the 50 release notes instead of 51
+  * Add 2 patches to revert changes that require newer gtk4 & accountsservice
+  * Remove remote desktop patch applied in new release
+  * Remove obsolete Build-Depends: libhandy-1-dev
+  * Update minimum gnome-desktop and gsettings-desktop-schemas
+
+  [ Alessandro Astone ]
+  * Add Build-Depends: libgnome-qr-gtk-4-dev
+  * Rebase patches
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Sun, 09 Aug 2026 14:46:19 +0200
+
 gnome-control-center (1:51~alpha-0ubuntu4) stonking; urgency=medium
 
   [ Sergio Costas Rodriguez ]
@@ -191,19 +207,18 @@ gnome-control-center (1:50~beta-1ubuntu1) resolute; urgency=medium
 
 gnome-control-center (1:50~beta-1) unstable; urgency=medium
 
+  [ Jeremy Bícha ]
   * New upstream release
-  * Drop kbd-lv3.patch, applied upstream.
-  * Rework Adapts-the-region*.patch.
+  * Bump minimum gtk4
+
+  [ Nathan Pratta Teodosio ]
+  * Remove kbd-lv3.patch, applied upstream.
   * d/control: Depend on blueprint-compiler >= 0.19.0.
-  * d/p/u/region-Add-Language-Selector-button.patch: Partially rewritten so it
-    is closer to upstream.
-  * Refresh four patches that did not apply cleanly, namely:
-    d/p/u/multitasking-panel-Sync-workspace-and-monitor-isolation-d.patch
-    d/p/u/multitasking-panel-Sync-workspace-isolation-setting-on-ti.patch
-    d/p/u/applications-Launch-snap-store-if-it-is-installed.patch
-    d/p/u/applications-Support-controlling-the-autostart-flag-on-ap.patch
-  * d/p/u/meson:relax-malcontent-version.patch: Debian/Ubuntu do not have
-    Malcontent 0.14 Alpha yet; 0.13 is OK.
+  * Add patch to lower required malcontent version
+
+  [ Marco Trevisan (Treviño) ]
+  * debian/control: Bump build dependencies as per 50 update
+  * Add additional patch to lower required malcontent version
 
  -- Jeremy Bícha <jbicha@ubuntu.com>  Mon, 16 Feb 2026 18:02:30 -0500
 

@@ -34,6 +34,7 @@
 #include "cc-list-row.h"
 #include "cc-user-page.h"
 #include "cc-users-page.h"
+#include "shell/cc-window.h"
 #include "user-utils.h"
 
 #include <act/act.h>
@@ -48,7 +49,7 @@
 #define USER_ACCOUNTS_PERMISSION "org.gnome.controlcenter.user-accounts.administration"
 
 struct _CcUsersPage {
-    AdwNavigationPage parent_instance;
+    CcPanel parent_instance;
 
     AdwButtonRow *add_user_button_row;
     AdwButtonRow *add_enterprise_user_button_row;
@@ -62,7 +63,7 @@ struct _CcUsersPage {
     ActUserManager *user_manager;
 };
 
-G_DEFINE_FINAL_TYPE (CcUsersPage, cc_users_page, ADW_TYPE_NAVIGATION_PAGE)
+G_DEFINE_FINAL_TYPE (CcUsersPage, cc_users_page, CC_TYPE_PANEL)
 
 static void
 cc_users_page_map (GtkWidget *widget)

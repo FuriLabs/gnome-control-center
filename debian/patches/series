@@ -7,6 +7,9 @@ camera-location-Add-snap-support-to-find-app-ID-from-port.patch
 debian/Debian-s-adduser-doesn-t-allow-uppercase-letters-by-defau.patch
 debian/Ignore-result-of-test-network-panel.patch
 debian/keyboard-Set-debian-keyboard-config.patch
+debian/Revert-datetime-Use-GtkEnumList.patch
+debian/Revert-users-Disable-keeping-data-if-deleting-homed-user.patch
+debian/Set-release-notes-version-to-50.patch
 ubuntu/keyboard-Add-launch-terminal-shortcut.patch
 ubuntu/sound-Allow-volume-to-be-set-above-100.patch
 ubuntu/Allow-tweaking-some-settings-for-Ubuntu-Dock.patch
@@ -35,3 +38,4 @@ ubuntu/cc-privacy-panel-Add-action-row-to-launch-the-Ubuntu-Secu.patch
 ubuntu/panels-background-Notify-users-with-OLED-screens-about-da.patch
 ubuntu/panels-search-Add-ability-to-change-the-search-extensions.patch
 ubuntu/panels-Add-certification-program-page.patch
+

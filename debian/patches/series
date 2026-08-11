@@ -1,3 +1,5 @@
+build-Require-gsettings-desktop-schemas-51.alpha.patch
+build-Bump-dependency-on-setting-schemas-51.beta.patch
 applications-Take-care-of-the-snap-app-name-if-set-for-po.patch
 applications-panel-Use-portal-app-ID-to-store-portal-sett.patch
 cc-util-Add-function-to-get-the-portal-ID-for-an-applicat.patch

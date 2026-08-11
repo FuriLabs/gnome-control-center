@@ -1,0 +1,24 @@
+From: =?utf-8?q?Jeremy_B=C3=ADcha?= <jbicha@ubuntu.com>
+Date: Sun, 9 Aug 2026 14:50:34 +0200
+Subject: build: Require gsettings-desktop-schemas 51.alpha
+
+for keyboard-focus-visible-timeout
+
+Origin: https://gitlab.gnome.org/GNOME/gnome-control-center/-/commit/d8f3328
+---
+ meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index 2198baf..66cc72f 100644
+--- a/meson.build
++++ b/meson.build
+@@ -236,7 +236,7 @@ gnome_bg_dep = dependency('gnome-bg-4')
+ gnome_qr_gtk_dep = dependency('gnome-qr-gtk-4')
+ gnome_settings_dep = dependency('gnome-settings-daemon', version: '>= 48.rc', fallback: 'gsd')
+ goa_dep = dependency('goa-1.0', version: goa_req_version, fallback: 'goa')
+-gsettings_desktop_dep = dependency('gsettings-desktop-schemas', version: '>= 50.alpha')
++gsettings_desktop_dep = dependency('gsettings-desktop-schemas', version: '>= 51.alpha')
+ libxml_dep = dependency('libxml-2.0')
+ pulse_dep = dependency('libpulse', version: pulse_req_version)
+ pulse_mainloop_dep = dependency('libpulse-mainloop-glib', version: pulse_req_version)

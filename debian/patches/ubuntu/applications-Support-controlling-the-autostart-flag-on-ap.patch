@@ -33,10 +33,10 @@ Forwarded: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/
  3 files changed, 421 insertions(+), 3 deletions(-)
 
 diff --git a/panels/applications/cc-applications-panel.blp b/panels/applications/cc-applications-panel.blp
-index 0e5bd22..abfac5d 100644
+index 5731c00..a2ca915 100644
 --- a/panels/applications/cc-applications-panel.blp
 +++ b/panels/applications/cc-applications-panel.blp
-@@ -222,6 +222,14 @@ template $CcApplicationsPanel: $CcPanel {
+@@ -220,6 +220,14 @@ template $CcApplicationsPanel: $CcPanel {
                notify::active => $background_cb(template);
              }
  

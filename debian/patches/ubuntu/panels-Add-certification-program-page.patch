@@ -50,7 +50,7 @@ varlink-based protocol.
  create mode 100755 tests/certified_ubuntu/test-certified.py
 
 diff --git a/meson.build b/meson.build
-index 081973c..3103d61 100644
+index 6b16097..2198baf 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -133,6 +133,9 @@ gtk_version = '>= 4.23.0'
@@ -63,7 +63,7 @@ index 081973c..3103d61 100644
  
  gtk_dep = dependency(
    'gtk4',
-@@ -252,6 +255,7 @@ common_deps = [
+@@ -253,6 +256,7 @@ common_deps = [
    dependency('gio-unix-2.0'),
    dependency('gthread-2.0'),
    gtk_dep,
@@ -72,51 +72,51 @@ index 081973c..3103d61 100644
  
  polkit_gobject_dep = dependency('polkit-gobject-1', version: '>= 0.103')
 diff --git a/panels/system/cc-system-panel.blp b/panels/system/cc-system-panel.blp
-index bc7d84c..0208ecb 100644
+index fa39bf6..2bd555a 100644
 --- a/panels/system/cc-system-panel.blp
 +++ b/panels/system/cc-system-panel.blp
-@@ -11,6 +11,25 @@ template $CcSystemPanel: $CcPanel {
-       Adw.HeaderBar {}
+@@ -9,6 +9,25 @@ template $CcSystemPanel: $CcPanel {
+     Adw.HeaderBar {}
  
-       content: Adw.PreferencesPage {
-+        Adw.PreferencesGroup {
-+          $CcListRow about_row {
-+            title: _("_About");
-+            subtitle: _("Hardware details and software versions");
-+            icon-name: "org.gnome.Settings-about-symbolic";
-+            show-arrow: true;
-+            action-name: "navigation.push";
-+            action-target: "'about'";
-+          }
-+
-+          $CcListRow certification_row {
-+            title: _("Check if this computer is Ubuntu Certified");
-+            icon-name: "org.canonical.check-certified-symbolic";
-+            show-arrow: true;
-+            action-name: "navigation.push";
-+            action-target: "'ubuntu-certified'";
-+          }
+     content: Adw.PreferencesPage {
++      Adw.PreferencesGroup {
++        $CcListRow about_row {
++          title: _("_About");
++          subtitle: _("Hardware details and software versions");
++          icon-name: "org.gnome.Settings-about-symbolic";
++          show-arrow: true;
++          action-name: "navigation.push";
++          action-target: "'about'";
 +        }
 +
-         Adw.PreferencesGroup {
-           $CcListRow region_row {
-             title: _("_Region &amp; Language");
-@@ -56,15 +75,6 @@ template $CcSystemPanel: $CcPanel {
-             show-arrow: true;
-             activated => $on_secure_shell_row_clicked(template);
-           }
--
--          $CcListRow about_row {
--            title: _("_About");
--            subtitle: _("Hardware details and software versions");
--            icon-name: "org.gnome.Settings-about-symbolic";
--            show-arrow: true;
--            action-name: "navigation.push";
--            action-target: "'about'";
--          }
++        $CcListRow certification_row {
++          title: _("Check if this computer is Ubuntu Certified");
++          icon-name: "org.canonical.check-certified-symbolic";
++          show-arrow: true;
++          action-name: "navigation.push";
++          action-target: "'ubuntu-certified'";
++        }
++      }
++
+       Adw.PreferencesGroup {
+         $CcListRow region_row {
+           title: _("_Region &amp; Language");
+@@ -54,15 +73,6 @@ template $CcSystemPanel: $CcPanel {
+           show-arrow: true;
+           activated => $on_secure_shell_row_clicked(template);
          }
+-
+-        $CcListRow about_row {
+-          title: _("_About");
+-          subtitle: _("Hardware details and software versions");
+-          icon-name: "org.gnome.Settings-about-symbolic";
+-          show-arrow: true;
+-          action-name: "navigation.push";
+-          action-target: "'about'";
+-        }
+       }
  
-         Adw.PreferencesGroup software_updates_group {
+       Adw.PreferencesGroup software_updates_group {
 diff --git a/panels/system/cc-system-panel.c b/panels/system/cc-system-panel.c
 index d8e7c70..8f824f7 100644
 --- a/panels/system/cc-system-panel.c
@@ -2404,10 +2404,10 @@ index 0000000..660488d
 +server.serve_forever()
 \ No newline at end of file
 diff --git a/tests/meson.build b/tests/meson.build
-index 47b5f28..48a2ada 100644
+index 66f79d8..ff0d4ba 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
-@@ -15,3 +15,4 @@ endif
+@@ -16,3 +16,4 @@ endif
  
  subdir('printers')
  subdir('keyboard')

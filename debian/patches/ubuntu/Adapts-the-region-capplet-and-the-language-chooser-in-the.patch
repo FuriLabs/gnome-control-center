@@ -267,7 +267,7 @@ index 3629746..8a2acd9 100644
 +
  G_END_DECLS
 diff --git a/panels/system/region/cc-region-page.c b/panels/system/region/cc-region-page.c
-index 9fccadc..891dab6 100644
+index 272cf57..a0c235c 100644
 --- a/panels/system/region/cc-region-page.c
 +++ b/panels/system/region/cc-region-page.c
 @@ -217,20 +217,29 @@ set_localed_locale (CcRegionPage *self)
@@ -485,7 +485,7 @@ index 9fccadc..891dab6 100644
  
          update_login_language (self);
 diff --git a/panels/system/users/cc-user-page.c b/panels/system/users/cc-user-page.c
-index 6fa5a44..7763bee 100644
+index caa4c6c..f07c9fb 100644
 --- a/panels/system/users/cc-user-page.c
 +++ b/panels/system/users/cc-user-page.c
 @@ -30,6 +30,7 @@
@@ -496,7 +496,7 @@ index 6fa5a44..7763bee 100644
  #include "cc-fingerprint-dialog.h"
  #include "cc-fingerprint-manager.h"
  #include "cc-language-chooser.h"
-@@ -164,6 +165,7 @@ get_user_language (ActUser *user)
+@@ -166,6 +167,7 @@ get_user_language (ActUser *user)
  
      lang = g_strdup (act_user_get_language (user));
      if (lang && *lang != '\0') {
@@ -504,7 +504,7 @@ index 6fa5a44..7763bee 100644
          return gnome_get_language_from_locale (lang, NULL);
      }
  
-@@ -292,9 +294,12 @@ show_language_chooser (CcUserPage *self)
+@@ -294,9 +296,12 @@ show_language_chooser (CcUserPage *self)
  {
      CcLanguageChooser *language_chooser;
      const gchar *current_language;

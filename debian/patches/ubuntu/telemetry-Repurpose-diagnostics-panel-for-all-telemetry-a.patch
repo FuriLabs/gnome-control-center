@@ -43,10 +43,10 @@ functionality to generate and show an example report is also present.
  create mode 100644 panels/privacy/telemetry/telemetry.css
 
 diff --git a/meson.build b/meson.build
-index 401ccd2..081973c 100644
+index 6e3473f..6b16097 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -354,6 +354,14 @@ endif
+@@ -355,6 +355,14 @@ endif
  config_h.set('HAVE_WHOOPSIE', enable_whoopsie,
               description: 'Define to 1 if Whoopsie is enabled')
  
@@ -61,7 +61,7 @@ index 401ccd2..081973c 100644
  if host_is_linux
    # ModemManager
    mm_dep =  dependency('mm-glib', version: '>= 0.7')
-@@ -461,6 +469,7 @@ summary({
+@@ -462,6 +470,7 @@ summary({
      'Snap': enable_snap,
      'Malcontent': enable_malcontent,
      'Whoopsie': enable_whoopsie,
@@ -79,29 +79,29 @@ index 20de3e1..b222b2a 100644
  option('whoopsie', type: 'boolean', value: false, description: 'build with Whoopsie support')
 +option('insights', type: 'boolean', value: false, description: 'build with Ubuntu Insights support')
 diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
-index 4ef1b86..7e81a7e 100644
+index e7daa37..1685bdf 100644
 --- a/panels/privacy/cc-privacy-panel.blp
 +++ b/panels/privacy/cc-privacy-panel.blp
-@@ -43,13 +43,13 @@ template $CcPrivacyPanel: $CcPanel {
-           }
+@@ -41,13 +41,13 @@ template $CcPrivacyPanel: $CcPanel {
+         }
  
-           $CcListRow {
--            title: _("_Diagnostics");
--            subtitle: _("Automatic problem reporting");
--            icon-name: "org.gnome.Settings-device-diagnostics-symbolic";
-+            title: _("Tele_metry");
-+            subtitle: _("Control error and system reporting");
-+            icon-name: "diagnostics-symbolic";
-             show-arrow: true;
-             action-name: "navigation.push";
--            action-target: "'diagnostics'";
--            visible: bind diagnostics_page.visible;
-+            action-target: "'telemetry'";
-+            visible: bind telemetry_page.visible;
-           }
+         $CcListRow {
+-          title: _("_Diagnostics");
+-          subtitle: _("Automatic problem reporting");
+-          icon-name: "org.gnome.Settings-device-diagnostics-symbolic";
++          title: _("Tele_metry");
++          subtitle: _("Control error and system reporting");
++          icon-name: "diagnostics-symbolic";
+           show-arrow: true;
+           action-name: "navigation.push";
+-          action-target: "'diagnostics'";
+-          visible: bind diagnostics_page.visible;
++          action-target: "'telemetry'";
++          visible: bind telemetry_page.visible;
+         }
  
-           $CcListRow {
-@@ -108,7 +108,7 @@ template $CcPrivacyPanel: $CcPanel {
+         $CcListRow {
+@@ -105,7 +105,7 @@ template $CcPrivacyPanel: $CcPanel {
    $CcUsagePage {}
  
    [subpage]
@@ -111,10 +111,10 @@ index 4ef1b86..7e81a7e 100644
    [subpage]
    $CcConnectivityPage {}
 diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
-index b046cc7..5727b97 100644
+index 3a295dc..f348c76 100644
 --- a/panels/privacy/cc-privacy-panel.c
 +++ b/panels/privacy/cc-privacy-panel.c
-@@ -28,7 +28,7 @@
+@@ -29,7 +29,7 @@
  #include "cc-list-row.h"
  #include "cc-privacy-resources.h"
  #include "connectivity/cc-connectivity-page.h"
@@ -123,7 +123,7 @@ index b046cc7..5727b97 100644
  #include "firmware-security/cc-firmware-security-page.h"
  #include "location/cc-location-page.h"
  #include "screen/cc-screen-page.h"
-@@ -72,7 +72,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+@@ -81,7 +81,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
  
      g_type_ensure (CC_TYPE_CAMERA_PAGE);
      g_type_ensure (CC_TYPE_CONNECTIVITY_PAGE);

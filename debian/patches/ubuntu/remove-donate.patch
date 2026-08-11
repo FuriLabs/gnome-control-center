@@ -8,7 +8,7 @@ Forwarded: not-needed
  1 file changed, 1 insertion(+)
 
 diff --git a/panels/system/about/cc-about-page.blp b/panels/system/about/cc-about-page.blp
-index e8f804d..31acb94 100644
+index 47e8fa9..7c41cd5 100644
 --- a/panels/system/about/cc-about-page.blp
 +++ b/panels/system/about/cc-about-page.blp
 @@ -27,6 +27,7 @@ template $CcAboutPage: Adw.NavigationPage {

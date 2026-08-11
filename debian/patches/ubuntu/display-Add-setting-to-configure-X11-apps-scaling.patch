@@ -11,49 +11,47 @@ contexts.
 
 Bug-Ubuntu: https://bugs.launchpad.net/mutter/+bug/2110515
 ---
- panels/display/cc-display-panel.blp | 12 +++++-
+ panels/display/cc-display-panel.blp | 10 +++++
  panels/display/cc-display-panel.c   | 79 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 89 insertions(+), 2 deletions(-)
+ 2 files changed, 89 insertions(+)
 
 diff --git a/panels/display/cc-display-panel.blp b/panels/display/cc-display-panel.blp
-index f40b2cf..8c08af0 100644
+index 010df7b..f974eb7 100644
 --- a/panels/display/cc-display-panel.blp
 +++ b/panels/display/cc-display-panel.blp
-@@ -15,7 +15,7 @@ template $CcDisplayPanel: $CcPanel {
-   Adw.NavigationPage {
-     title: _("Displays");
- 
--    child: Adw.ToolbarView {
-+    child: Adw.ToastOverlay toast_overlay { child: Adw.ToolbarView {
-       [top]
-       Adw.HeaderBar apply_titlebar {
-         visible: bind template.showing-apply-titlebar;
-@@ -107,6 +107,14 @@ template $CcDisplayPanel: $CcPanel {
-           visible: false;
-         }
- 
-+        Adw.PreferencesGroup scale_legacy_apps_row_group {
-+          Adw.SwitchRow scale_legacy_apps_row {
-+            title: C_("display setting", "Built-in Scaling for Legacy Apps");
-+            subtitle: C_("display setting", "Legacy apps that support scaling will look crisp, but some might not scale at all.");
-+            use-underline: true;
-+          }
-+        }
-+
-         Adw.PreferencesGroup {
-           $CcListRow night_light_row {
-             /* Translators: This is the redshift functionality where we suppress blue light when the sun has gone down */
-@@ -118,7 +126,7 @@ template $CcDisplayPanel: $CcPanel {
-           }
-         }
-       };
--    };
-+    }; };
+@@ -13,6 +13,7 @@ template $CcDisplayPanel: $CcPanel {
+     }
    }
  
++  child: Adw.ToastOverlay toast_overlay {
+   child: Adw.ToolbarView {
+     [top]
+     Adw.HeaderBar apply_titlebar {
+@@ -105,6 +106,14 @@ template $CcDisplayPanel: $CcPanel {
+         visible: false;
+       }
+ 
++      Adw.PreferencesGroup scale_legacy_apps_row_group {
++        Adw.SwitchRow scale_legacy_apps_row {
++          title: C_("display setting", "Built-in Scaling for Legacy Apps");
++          subtitle: C_("display setting", "Legacy apps that support scaling will look crisp, but some might not scale at all.");
++          use-underline: true;
++        }
++      }
++
+       Adw.PreferencesGroup {
+         $CcListRow night_light_row {
+           /* Translators: This is the redshift functionality where we suppress blue light when the sun has gone down */
+@@ -117,6 +126,7 @@ template $CcDisplayPanel: $CcPanel {
+       }
+     };
+   };
++  };
+ 
    [subpage]
+   Adw.NavigationPage {
 diff --git a/panels/display/cc-display-panel.c b/panels/display/cc-display-panel.c
-index 64ca237..b136671 100644
+index eb2ddb3..9927948 100644
 --- a/panels/display/cc-display-panel.c
 +++ b/panels/display/cc-display-panel.c
 @@ -44,6 +44,9 @@
@@ -139,7 +137,7 @@ index 64ca237..b136671 100644
      self->rebuilding_counter--;
      update_apply_button (self);
  }
-@@ -959,6 +979,39 @@ session_bus_ready (GObject *source, GAsyncResult *res, CcDisplayPanel *self)
+@@ -969,6 +989,39 @@ session_bus_ready (GObject *source, GAsyncResult *res, CcDisplayPanel *self)
      g_signal_connect_object (self->manager, "changed", G_CALLBACK (on_screen_changed), self, G_CONNECT_SWAPPED);
  }
  
@@ -179,7 +177,7 @@ index 64ca237..b136671 100644
  static void
  cc_display_panel_init (CcDisplayPanel *self)
  {
-@@ -1015,6 +1068,32 @@ cc_display_panel_init (CcDisplayPanel *self)
+@@ -1025,6 +1078,32 @@ cc_display_panel_init (CcDisplayPanel *self)
      g_signal_connect_object (self->display_settings, "changed::night-light-enabled",
                               G_CALLBACK (on_night_light_enabled_changed_cb), self, G_CONNECT_SWAPPED);
      on_night_light_enabled_changed_cb (self);

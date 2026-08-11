@@ -25,7 +25,7 @@ index 6367683..18a25e3 100644
            visible: false;
            title: _("Forbid New _USB Devices");
 diff --git a/panels/privacy/screen/cc-screen-page.c b/panels/privacy/screen/cc-screen-page.c
-index 2742d20..21e9852 100644
+index 341a897..91dc5d3 100644
 --- a/panels/privacy/screen/cc-screen-page.c
 +++ b/panels/privacy/screen/cc-screen-page.c
 @@ -44,6 +44,7 @@ struct _CcScreenPage {
@@ -62,7 +62,7 @@ index 2742d20..21e9852 100644
      g_settings_bind (self->lock_settings, "lock-enabled", self->automatic_screen_lock_row, "active",
                       G_SETTINGS_BIND_DEFAULT);
  
-@@ -194,6 +200,17 @@ cc_screen_page_init (CcScreenPage *self)
+@@ -192,6 +198,17 @@ cc_screen_page_init (CcScreenPage *self)
      g_settings_bind (self->privacy_settings, "privacy-screen", self->privacy_screen_row, "active",
                       G_SETTINGS_BIND_DEFAULT);
  

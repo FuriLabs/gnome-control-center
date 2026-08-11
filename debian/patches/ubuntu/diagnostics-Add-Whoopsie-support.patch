@@ -12,10 +12,10 @@ Subject: diagnostics: Add Whoopsie support
  6 files changed, 268 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 22f28ba..401ccd2 100644
+index 1c77445..6e3473f 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -346,6 +346,14 @@ ssh_socket_activation = get_option('ssh_socket_activation')
+@@ -347,6 +347,14 @@ ssh_socket_activation = get_option('ssh_socket_activation')
  config_h.set('HAVE_SSH_SOCKET_ACTIVATION', ssh_socket_activation,
               description: 'Whether SSH socket activation is enabled')
  
@@ -30,7 +30,7 @@ index 22f28ba..401ccd2 100644
  if host_is_linux
    # ModemManager
    mm_dep =  dependency('mm-glib', version: '>= 0.7')
-@@ -452,6 +460,7 @@ summary({
+@@ -453,6 +461,7 @@ summary({
      'IBus': enable_ibus,
      'Snap': enable_snap,
      'Malcontent': enable_malcontent,

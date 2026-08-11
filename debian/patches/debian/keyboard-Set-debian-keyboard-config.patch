@@ -15,7 +15,7 @@ Forwarded: not-needed
  .../org.gnome.controlcenter.keyboard.policy.in.in} | 12 ++---
  5 files changed, 107 insertions(+), 11 deletions(-)
  create mode 100755 panels/keyboard/gnome-control-center-set-debian-keyboard
- copy panels/{system/remote-desktop/org.gnome.controlcenter.remote-session-helper.policy.in.in => keyboard/org.gnome.controlcenter.keyboard.policy.in.in} (60%)
+ copy panels/{system/secure-shell/org.gnome.controlcenter.remote-login-helper.policy.in.in => keyboard/org.gnome.controlcenter.keyboard.policy.in.in} (60%)
 
 diff --git a/panels/common/gnome-control-center.rules.in b/panels/common/gnome-control-center.rules.in
 index 8532d1e..dc0cfad 100644
@@ -182,12 +182,12 @@ index b1e507b..740ba65 100644
 +install_data('gnome-control-center-set-debian-keyboard', install_dir: control_center_libexecdir)
 +
  subdir('icons')
-diff --git a/panels/system/remote-desktop/org.gnome.controlcenter.remote-session-helper.policy.in.in b/panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in
+diff --git a/panels/system/secure-shell/org.gnome.controlcenter.remote-login-helper.policy.in.in b/panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in
 similarity index 60%
-copy from panels/system/remote-desktop/org.gnome.controlcenter.remote-session-helper.policy.in.in
+copy from panels/system/secure-shell/org.gnome.controlcenter.remote-login-helper.policy.in.in
 copy to panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in
-index 28beba3..7f550f3 100644
---- a/panels/system/remote-desktop/org.gnome.controlcenter.remote-session-helper.policy.in.in
+index dc2606e..7f550f3 100644
+--- a/panels/system/secure-shell/org.gnome.controlcenter.remote-login-helper.policy.in.in
 +++ b/panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in
 @@ -2,21 +2,21 @@
  <!DOCTYPE policyconfig PUBLIC
@@ -199,9 +199,9 @@ index 28beba3..7f550f3 100644
    <vendor>The GNOME Project</vendor>
    <vendor_url>http://www.gnome.org/</vendor_url>
  
--  <action id="org.gnome.controlcenter.remote-session-helper">
--  <description>Enable or disable remote sessions</description>
--    <message>Authentication is required to enable or disable remote sessions</message>
+-  <action id="org.gnome.controlcenter.remote-login-helper">
+-    <description>Enable or disable remote login</description>
+-    <message>Authentication is required to enable or disable remote login</message>
 +  <action id="org.gnome.controlcenter.set-keyboard">
 +    <description>Change system keyboard settings</description>
 +    <message>To change global keyboard settings, you need to authenticate.</message>
@@ -210,7 +210,7 @@ index 28beba3..7f550f3 100644
        <allow_inactive>no</allow_inactive>
        <allow_active>auth_admin_keep</allow_active>
      </defaults>
--    <annotate key="org.freedesktop.policykit.imply">org.freedesktop.systemd1.manage-units org.freedesktop.systemd1.manage-unit-files org.gnome.remotedesktop.configure-system-daemon</annotate>
+-    <annotate key="org.freedesktop.policykit.imply">org.freedesktop.systemd1.manage-units org.freedesktop.systemd1.manage-unit-files</annotate>
 +    <annotate key="org.freedesktop.policykit.exec.path">@libexecdir@/gnome-control-center-set-debian-keyboard</annotate>
 +    <annotate key="org.freedesktop.policykit.imply">org.freedesktop.locale1.set-keyboard</annotate>
    </action>

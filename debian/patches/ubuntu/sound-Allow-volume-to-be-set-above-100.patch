@@ -23,23 +23,23 @@ Bug: https://bugzilla.gnome.org/show_bug.cgi?id=710424
  2 files changed, 21 insertions(+)
 
 diff --git a/panels/sound/cc-sound-panel.blp b/panels/sound/cc-sound-panel.blp
-index ee4f177..2bc416b 100644
+index 7c894f9..b840242 100644
 --- a/panels/sound/cc-sound-panel.blp
 +++ b/panels/sound/cc-sound-panel.blp
-@@ -90,6 +90,14 @@ template $CcSoundPanel: $CcPanel {
-             }
+@@ -88,6 +88,14 @@ template $CcSoundPanel: $CcPanel {
            }
+         }
  
-+          Adw.SwitchRow allow_amplify_row {
-+            activatable: false;
-+            subtitle: _("Allow volume to exceed 100%, with reduced sound quality");
-+            subtitle-lines: 6;
-+            title: _("O_veramplification");
-+            use-underline: true;
-+          }
++        Adw.SwitchRow allow_amplify_row {
++          activatable: false;
++          subtitle: _("Allow volume to exceed 100%, with reduced sound quality");
++          subtitle-lines: 6;
++          title: _("O_veramplification");
++          use-underline: true;
++        }
 +
-           Adw.PreferencesRow fade_row {
-             activatable: false;
+         Adw.PreferencesRow fade_row {
+           activatable: false;
  
 diff --git a/panels/sound/cc-sound-panel.c b/panels/sound/cc-sound-panel.c
 index 9968793..8ad08cd 100644

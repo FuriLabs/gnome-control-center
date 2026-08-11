@@ -31,26 +31,26 @@ https://bugzilla.gnome.org/show_bug.cgi?id=737362
  create mode 100644 panels/privacy/icons/scalable/org.gnome.Settings-network-workgroup-symbolic.svg
 
 diff --git a/panels/privacy/cc-privacy-panel.blp b/panels/privacy/cc-privacy-panel.blp
-index 10e6c51..4ef1b86 100644
+index 6979118..e7daa37 100644
 --- a/panels/privacy/cc-privacy-panel.blp
 +++ b/panels/privacy/cc-privacy-panel.blp
-@@ -51,6 +51,15 @@ template $CcPrivacyPanel: $CcPanel {
-             action-target: "'diagnostics'";
-             visible: bind diagnostics_page.visible;
-           }
-+
-+          $CcListRow {
-+            title: _("Co_nnectivity");
-+            subtitle: _("Detect connection issues");
-+            icon-name: "org.gnome.Settings-device-diagnostics-symbolic";
-+            show-arrow: true;
-+            action-name: "navigation.push";
-+            action-target: "'connectivity'";
-+          }
+@@ -49,6 +49,15 @@ template $CcPrivacyPanel: $CcPanel {
+           action-target: "'diagnostics'";
+           visible: bind diagnostics_page.visible;
          }
++
++        $CcListRow {
++          title: _("Co_nnectivity");
++          subtitle: _("Detect connection issues");
++          icon-name: "org.gnome.Settings-device-diagnostics-symbolic";
++          show-arrow: true;
++          action-name: "navigation.push";
++          action-target: "'connectivity'";
++        }
+       }
  
-         Adw.PreferencesGroup {
-@@ -101,6 +110,9 @@ template $CcPrivacyPanel: $CcPanel {
+       Adw.PreferencesGroup {
+@@ -98,6 +107,9 @@ template $CcPrivacyPanel: $CcPanel {
    [subpage]
    $CcDiagnosticsPage diagnostics_page {}
  
@@ -61,10 +61,10 @@ index 10e6c51..4ef1b86 100644
    $CcFirmwareSecurityPage security_page {}
  }
 diff --git a/panels/privacy/cc-privacy-panel.c b/panels/privacy/cc-privacy-panel.c
-index dfc3865..b046cc7 100644
+index 5370e2c..3a295dc 100644
 --- a/panels/privacy/cc-privacy-panel.c
 +++ b/panels/privacy/cc-privacy-panel.c
-@@ -27,6 +27,7 @@
+@@ -28,6 +28,7 @@
  #include "camera/cc-camera-page.h"
  #include "cc-list-row.h"
  #include "cc-privacy-resources.h"
@@ -72,7 +72,7 @@ index dfc3865..b046cc7 100644
  #include "diagnostics/cc-diagnostics-page.h"
  #include "firmware-security/cc-firmware-security-page.h"
  #include "location/cc-location-page.h"
-@@ -70,6 +71,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
+@@ -79,6 +80,7 @@ cc_privacy_panel_class_init (CcPrivacyPanelClass *klass)
      gtk_widget_class_bind_template_child (widget_class, CcPrivacyPanel, location_row);
  
      g_type_ensure (CC_TYPE_CAMERA_PAGE);

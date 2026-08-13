@@ -11,10 +11,10 @@ Origin: https://gitlab.gnome.org/GNOME/gnome-control-center/-/merge_requests/346
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 66cc72f..98a5ddb 100644
+index 0b19251..3894854 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -236,7 +236,7 @@ gnome_bg_dep = dependency('gnome-bg-4')
+@@ -233,7 +233,7 @@ gnome_bg_dep = dependency('gnome-bg-4')
  gnome_qr_gtk_dep = dependency('gnome-qr-gtk-4')
  gnome_settings_dep = dependency('gnome-settings-daemon', version: '>= 48.rc', fallback: 'gsd')
  goa_dep = dependency('goa-1.0', version: goa_req_version, fallback: 'goa')

@@ -50,7 +50,7 @@ varlink-based protocol.
  create mode 100755 tests/certified_ubuntu/test-certified.py
 
 diff --git a/meson.build b/meson.build
-index 6b16097..2198baf 100644
+index d4cbeea..98a5ddb 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -133,6 +133,9 @@ gtk_version = '>= 4.23.0'

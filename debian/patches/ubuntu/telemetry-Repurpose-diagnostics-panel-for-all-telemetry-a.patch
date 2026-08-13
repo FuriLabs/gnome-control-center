@@ -27,14 +27,14 @@ functionality to generate and show an example report is also present.
  .../telemetry/cc-telemetry-insights-example.c      | 102 +++
  .../telemetry/cc-telemetry-insights-example.h}     |  13 +-
  panels/privacy/telemetry/cc-telemetry-page.blp     | 115 ++++
- panels/privacy/telemetry/cc-telemetry-page.c       | 766 +++++++++++++++++++++
+ panels/privacy/telemetry/cc-telemetry-page.c       | 765 +++++++++++++++++++++
  .../cc-telemetry-page.h}                           |  10 +-
  .../gnome-control-center-insights-helper.c         |  62 ++
  panels/privacy/telemetry/meson.build               |  42 ++
  ...rolcenter.insights-system-opt-out.policy.in.in} |  11 +-
  panels/privacy/telemetry/telemetry.css             |   8 +
  po/POTFILES.in                                     |   6 +
- 19 files changed, 1218 insertions(+), 30 deletions(-)
+ 19 files changed, 1217 insertions(+), 30 deletions(-)
  rename panels/privacy/{privacy.gresource.xml => privacy.gresource.xml.in} (88%)
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.blp
  create mode 100644 panels/privacy/telemetry/cc-telemetry-insights-example.c
@@ -579,10 +579,10 @@ index 0000000..675fe7d
 +}
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.c b/panels/privacy/telemetry/cc-telemetry-page.c
 new file mode 100644
-index 0000000..e0c7548
+index 0000000..70fabf9
 --- /dev/null
 +++ b/panels/privacy/telemetry/cc-telemetry-page.c
-@@ -0,0 +1,766 @@
+@@ -0,0 +1,765 @@
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
 + *
 + * Copyright (C) 2026 Canonical Ltd.
@@ -1301,7 +1301,7 @@ index 0000000..e0c7548
 +  if (self->permission == NULL)
 +    {
 +      g_critical ("Cannot create '%s' permission: %s",
-+                 INSIGHTS_SYSTEM_OPT_OUT_PERMISSION, error->message);
++                  INSIGHTS_SYSTEM_OPT_OUT_PERMISSION, error->message);
 +      g_clear_error (&error);
 +    }
 +  else
@@ -1318,8 +1318,7 @@ index 0000000..e0c7548
 +                             G_CALLBACK (sync_insights_switches),
 +                             self, G_CONNECT_SWAPPED);
 +
-+  g_signal_connect_object (self, "map", G_CALLBACK (sync_insights_switches),
-+                           self, G_CONNECT_SWAPPED);
++  g_signal_connect (self, "map", G_CALLBACK (sync_insights_switches), NULL);
 +  g_signal_connect (self, "unmap", G_CALLBACK (on_unmap_cb), NULL);
 +#endif
 +

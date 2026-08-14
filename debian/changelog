@@ -1,10 +1,10 @@
-gnome-control-center (1:50.3-0ubuntu0.2) UNRELEASED; urgency=medium
+gnome-control-center (1:50.3-0ubuntu0.2) resolute; urgency=medium
 
   [ Cyrus Lien ]
   * system, users: Keep fingerprint add-print popover visible when displays scaled
     (LP: #2158603)
 
- -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 14 Aug 2026 02:20:25 +0200
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 14 Aug 2026 02:20:40 +0200
 
 gnome-control-center (1:50.3-0ubuntu0.1) resolute; urgency=medium
 

@@ -1,3 +1,11 @@
+gnome-control-center (1:46.7-0ubuntu0.24.04.6) UNRELEASED; urgency=medium
+
+  [ Cyrus Lien ]
+  * system, users: Keep fingerprint add-print popover visible when displays scaled
+    (LP: #2158603)
+
+ -- Marco Trevisan (Treviño) <marco@ubuntu.com>  Fri, 14 Aug 2026 02:32:21 +0200
+
 gnome-control-center (1:46.7-0ubuntu0.24.04.5) noble; urgency=medium
 
   * Fix Add Enterprise Login dialog not completing (LP: #2161027)

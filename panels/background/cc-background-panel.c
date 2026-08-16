@@ -59,6 +59,7 @@
 #define FURIOS_GLASS_ACCENT_TEXT_KEY "glass-accent-text-color"
 #define FURIOS_GLASS_TEXT_SHADOW_KEY "glass-text-shadow"
 #define FURIOS_GLASS_SHADOW_COLOR_KEY "glass-text-shadow-color"
+#define FURIOS_WALLPAPER_FOLDER_KEY "wallpaper-folder"
 #define FURIOS_LOCKSCREEN_TINT_KEY "lockscreen-tint"
 #define PHOSH_PLUGINS_SCHEMA_ID "mobi.phosh.shell.plugins"
 #define PHOSH_STATUS_ICONS_KEY "status-icons"
@@ -96,7 +97,13 @@ struct _CcBackgroundPanel {
     GtkWidget *accent_custom_row;
     GtkWidget *accent_text_row;
     AdwSwitchRow *glass_theme_switch;
+    GtkWidget *wallpaper_folder_row;
+    AdwButtonContent *wallpaper_folder_content;
     AdwSwitchRow *lockscreen_tint_switch;
+    AdwComboRow *wallpaper_mode_row;
+    GtkWidget *add_picture_button;
+    GtkWidget *chooser_bin;
+    gboolean updating_mode;
     GtkAdjustment *glass_blur_adjustment;
     GtkAdjustment *glass_opacity_adjustment;
     GtkAdjustment *glass_lightness_adjustment;
@@ -692,6 +699,40 @@ on_accent_text_clear_cb (GtkButton *button,
 }
 
 static gboolean
+is_picture_name (const char *name)
+{
+    static const char * const exts[] = {
+        ".jpg", ".jpeg", ".png", ".webp", ".jxl", ".bmp", ".svg"
+    };
+    g_autofree char *lower = g_ascii_strdown (name, -1);
+
+    for (guint i = 0; i < G_N_ELEMENTS (exts); i++) {
+        if (g_str_has_suffix (lower, exts[i]))
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static guint
+count_pictures (const char *folder)
+{
+    g_autoptr (GDir) dir = g_dir_open (folder, 0, NULL);
+    const char *name;
+    guint n = 0;
+
+    if (dir == NULL)
+        return 0;
+
+    while ((name = g_dir_read_name (dir))) {
+        if (is_picture_name (name))
+            n++;
+    }
+
+    return n;
+}
+
+static gboolean
 weather_status_icon_is_enabled (CcBackgroundPanel *self)
 {
     g_auto(GStrv) status_icons = NULL;
@@ -826,6 +867,205 @@ ensure_furios_shell_settings (CcBackgroundPanel *self)
     return self->furios_shell_settings;
 }
 
+static gboolean
+wallpaper_folder_mode (CcBackgroundPanel *self)
+{
+    g_autofree char *folder = NULL;
+
+    if (self->furios_shell_settings == NULL)
+        return FALSE;
+
+    folder = g_settings_get_string (self->furios_shell_settings, FURIOS_WALLPAPER_FOLDER_KEY);
+
+    return folder != NULL && *folder != '\0';
+}
+
+static void
+update_wallpaper_mode_rows (CcBackgroundPanel *self)
+{
+    gboolean folder = wallpaper_folder_mode (self);
+
+    gtk_widget_set_visible (self->chooser_bin, !folder);
+    gtk_widget_set_visible (self->add_picture_button, !folder);
+    gtk_widget_set_visible (self->wallpaper_folder_row, folder);
+
+    self->updating_mode = TRUE;
+    adw_combo_row_set_selected (self->wallpaper_mode_row, folder ? 1 : 0);
+    self->updating_mode = FALSE;
+}
+
+static void
+apply_first_picture_from_folder (CcBackgroundPanel *self)
+{
+    g_autofree char *folder = NULL;
+    g_autoptr (GDir) dir = NULL;
+    g_autoptr (GPtrArray) names = NULL;
+    g_autofree char *path = NULL;
+    g_autofree char *uri = NULL;
+    const char *name;
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    folder = g_settings_get_string (self->furios_shell_settings, FURIOS_WALLPAPER_FOLDER_KEY);
+    if (folder == NULL || *folder == '\0')
+        return;
+
+    dir = g_dir_open (folder, 0, NULL);
+    if (dir == NULL)
+        return;
+
+    names = g_ptr_array_new_with_free_func (g_free);
+    while ((name = g_dir_read_name (dir))) {
+        if (is_picture_name (name))
+            g_ptr_array_add (names, g_strdup (name));
+    }
+
+    if (names->len == 0)
+        return;
+
+    /* Filename order, the same order phosh rotates in, so what appears now is
+     * the start of the sequence rather than a picture out of nowhere. */
+    g_ptr_array_sort_values (names, (GCompareFunc) g_strcmp0);
+
+    path = g_build_filename (folder, g_ptr_array_index (names, 0), NULL);
+    uri = g_filename_to_uri (path, NULL, NULL);
+    if (uri == NULL)
+        return;
+
+    g_settings_set_string (self->settings, WP_URI_KEY, uri);
+    g_settings_set_string (self->settings, WP_URI_DARK_KEY, uri);
+    g_settings_set_string (self->lock_settings, WP_URI_KEY, uri);
+
+    g_settings_apply (self->settings);
+    g_settings_apply (self->lock_settings);
+}
+
+static void on_wallpaper_folder_clicked_cb (CcBackgroundPanel *self);
+
+static void
+on_wallpaper_mode_changed_cb (CcBackgroundPanel *self)
+{
+    gboolean want_folder = adw_combo_row_get_selected (self->wallpaper_mode_row) == 1;
+
+    if (self->updating_mode || self->furios_shell_settings == NULL)
+        return;
+
+    if (want_folder == wallpaper_folder_mode (self))
+        return;
+
+    if (!want_folder) {
+        /* Clearing the folder is what turns rotation off. the picture on screen
+         * stays as it is and becomes the single wallpaper. */
+        g_settings_set_string (self->furios_shell_settings, FURIOS_WALLPAPER_FOLDER_KEY, "");
+        update_wallpaper_mode_rows (self);
+        return;
+    }
+
+    /* Switching to folder mode with nothing chosen has no folder to rotate
+     * through, so ask for one immediately rather than leaving a mode that does
+     * nothing. The rows update when the choice comes back. */
+    update_wallpaper_mode_rows (self);
+    on_wallpaper_folder_clicked_cb (self);
+}
+
+static void
+reload_wallpaper_folder (CcBackgroundPanel *self)
+{
+    g_autofree char *folder = NULL;
+    g_autofree char *label = NULL;
+    g_autoptr (GFile) file = NULL;
+    g_autofree char *name = NULL;
+    guint n;
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    folder = g_settings_get_string (self->furios_shell_settings, FURIOS_WALLPAPER_FOLDER_KEY);
+
+    if (folder == NULL || *folder == '\0') {
+        adw_button_content_set_label (self->wallpaper_folder_content, _("Choose\u2026"));
+        return;
+    }
+
+    file = g_file_new_for_path (folder);
+    name = g_file_get_basename (file);
+    n = count_pictures (folder);
+    label = g_strdup_printf (n == 1 ? _("%s (%u picture)") : _("%s (%u pictures)"), name, n);
+    adw_button_content_set_label (self->wallpaper_folder_content, label);
+}
+
+static void
+on_wallpaper_folder_selected (GObject *source, GAsyncResult *res, gpointer data)
+{
+    CcBackgroundPanel *self = data;
+    g_autoptr (GFile) picture = NULL;
+    g_autoptr (GFile) folder = NULL;
+    g_autoptr (GError) err = NULL;
+    g_autofree char *path = NULL;
+
+    picture = gtk_file_dialog_open_finish (GTK_FILE_DIALOG (source), res, &err);
+    if (picture == NULL) {
+        if (!g_error_matches (err, GTK_DIALOG_ERROR, GTK_DIALOG_ERROR_DISMISSED))
+            g_warning ("Could not pick a wallpaper folder: %s", err->message);
+        return;
+    }
+
+    folder = g_file_get_parent (picture);
+    path = folder ? g_file_get_path (folder) : NULL;
+    if (path == NULL) {
+        g_warning ("Wallpaper rotation needs a picture in a local folder");
+        return;
+    }
+
+    g_settings_set_string (self->furios_shell_settings, FURIOS_WALLPAPER_FOLDER_KEY, path);
+    reload_wallpaper_folder (self);
+    update_wallpaper_mode_rows (self);
+    apply_first_picture_from_folder (self);
+}
+
+static void
+on_wallpaper_folder_clicked_cb (CcBackgroundPanel *self)
+{
+    g_autoptr (GtkFileDialog) dialog = gtk_file_dialog_new ();
+    g_autoptr (GtkFileFilter) filter = gtk_file_filter_new ();
+    g_autoptr (GListStore) filters = g_list_store_new (GTK_TYPE_FILE_FILTER);
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    gtk_file_filter_set_name (filter, _("Pictures"));
+    gtk_file_filter_add_mime_type (filter, "image/jpeg");
+    gtk_file_filter_add_mime_type (filter, "image/png");
+    gtk_file_filter_add_mime_type (filter, "image/webp");
+    gtk_file_filter_add_mime_type (filter, "image/avif");
+    gtk_file_filter_add_mime_type (filter, "image/heic");
+    gtk_file_filter_add_mime_type (filter, "image/heif");
+    gtk_file_filter_add_mime_type (filter, "image/bmp");
+    gtk_file_filter_add_mime_type (filter, "image/tiff");
+    g_list_store_append (filters, filter);
+    gtk_file_dialog_set_filters (dialog, G_LIST_MODEL (filters));
+    gtk_file_dialog_set_title (dialog, _("Pick Any Picture in the Folder"));
+
+    gtk_file_dialog_open (dialog,
+                          GTK_WINDOW (gtk_widget_get_root (GTK_WIDGET (self))),
+                          NULL,
+                          on_wallpaper_folder_selected,
+                          self);
+}
+
+static void
+on_wallpaper_folder_clear_cb (CcBackgroundPanel *self)
+{
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    g_settings_reset (self->furios_shell_settings, FURIOS_WALLPAPER_FOLDER_KEY);
+    reload_wallpaper_folder (self);
+    /* Clearing the folder is the same thing as going back to a single picture */
+    update_wallpaper_mode_rows (self);
+}
+
 static void
 set_glass_rows_visible (CcBackgroundPanel *self, gboolean visible)
 {
@@ -834,6 +1074,7 @@ set_glass_rows_visible (CcBackgroundPanel *self, gboolean visible)
     gtk_widget_set_visible (GTK_WIDGET (self->text_glass_group), visible);
     gtk_widget_set_visible (GTK_WIDGET (self->glass_theme_group), visible);
     gtk_widget_set_visible (GTK_WIDGET (self->glass_group), visible);
+    gtk_widget_set_visible (self->wallpaper_folder_row, visible);
     gtk_widget_set_visible (GTK_WIDGET (self->lockscreen_tint_switch), visible);
 }
 
@@ -893,6 +1134,10 @@ setup_glass_group (CcBackgroundPanel *self)
     g_object_bind_property (self->glass_theme_switch, "active",
                             self->accent_text_row, "sensitive",
                             G_BINDING_SYNC_CREATE);
+
+
+    reload_wallpaper_folder (self);
+    update_wallpaper_mode_rows (self);
 
     g_settings_bind (self->furios_shell_settings, FURIOS_LOCKSCREEN_TINT_KEY,
                      self->lockscreen_tint_switch, "active", G_SETTINGS_BIND_DEFAULT);
@@ -1009,7 +1254,12 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, accent_text_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_theme_group);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_theme_switch);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, wallpaper_folder_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, wallpaper_folder_content);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, lockscreen_tint_switch);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, wallpaper_mode_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, add_picture_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, chooser_bin);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_blur_adjustment);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_opacity_adjustment);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_lightness_adjustment);
@@ -1033,6 +1283,9 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_callback (widget_class, on_accent_text_clear_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_shadow_color_changed_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_shadow_color_clear_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_wallpaper_mode_changed_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_wallpaper_folder_clicked_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_wallpaper_folder_clear_cb);
 }
 
 static void

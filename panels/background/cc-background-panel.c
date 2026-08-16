@@ -100,6 +100,8 @@ struct _CcBackgroundPanel {
     GtkWidget *wallpaper_folder_row;
     AdwButtonContent *wallpaper_folder_content;
     AdwSwitchRow *lockscreen_tint_switch;
+    AdwComboRow *fit_row;
+    gboolean updating_fit;
     AdwComboRow *wallpaper_mode_row;
     GtkWidget *add_picture_button;
     GtkWidget *chooser_bin;
@@ -732,6 +734,52 @@ count_pictures (const char *folder)
     return n;
 }
 
+static const struct {
+  const char *nick;
+  GDesktopBackgroundStyle style;
+} fit_options[] = {
+    { "zoom",      G_DESKTOP_BACKGROUND_STYLE_ZOOM },      /* Fill: cover, crop the rest */
+    { "scaled",    G_DESKTOP_BACKGROUND_STYLE_SCALED },    /* Fit: all of it, bars where short */
+    { "stretched", G_DESKTOP_BACKGROUND_STYLE_STRETCHED }, /* Stretch: cover, distort */
+    { "centered",  G_DESKTOP_BACKGROUND_STYLE_CENTERED },  /* Centered: original size */
+    { "wallpaper", G_DESKTOP_BACKGROUND_STYLE_WALLPAPER }, /* Tiled: repeated */
+    { "spanned",   G_DESKTOP_BACKGROUND_STYLE_SPANNED },   /* Spanned: across monitors */
+};
+
+static void
+reload_fit_row (CcBackgroundPanel *self)
+{
+    GDesktopBackgroundStyle current = g_settings_get_enum (self->settings, WP_OPTIONS_KEY);
+    guint selected = 0;
+
+    for (guint i = 0; i < G_N_ELEMENTS (fit_options); i++) {
+        if (fit_options[i].style == current) {
+            selected = i;
+            break;
+        }
+    }
+
+    /* Anything unrecognised shows as Fill without writing it back */
+    self->updating_fit = TRUE;
+    adw_combo_row_set_selected (self->fit_row, selected);
+    self->updating_fit = FALSE;
+}
+
+static void
+on_fit_changed_cb (CcBackgroundPanel *self)
+{
+    guint selected = adw_combo_row_get_selected (self->fit_row);
+
+    if (self->updating_fit || selected >= G_N_ELEMENTS (fit_options))
+        return;
+
+    g_settings_set_enum (self->settings, WP_OPTIONS_KEY, fit_options[selected].style);
+    g_settings_set_enum (self->lock_settings, WP_OPTIONS_KEY, fit_options[selected].style);
+
+    g_settings_apply (self->settings);
+    g_settings_apply (self->lock_settings);
+}
+
 static gboolean
 weather_status_icon_is_enabled (CcBackgroundPanel *self)
 {
@@ -1257,6 +1305,7 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, wallpaper_folder_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, wallpaper_folder_content);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, lockscreen_tint_switch);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, fit_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, wallpaper_mode_row);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, add_picture_button);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, chooser_bin);
@@ -1286,6 +1335,7 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_callback (widget_class, on_wallpaper_mode_changed_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_wallpaper_folder_clicked_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_wallpaper_folder_clear_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_fit_changed_cb);
 }
 
 static void
@@ -1309,6 +1359,10 @@ cc_background_panel_init (CcBackgroundPanel *self)
 
     self->lock_settings = g_settings_new (WP_LOCK_PATH_ID);
     g_settings_delay (self->lock_settings);
+
+    reload_fit_row (self);
+    g_signal_connect_object (self->settings, "changed::" WP_OPTIONS_KEY,
+                             G_CALLBACK (reload_fit_row), self, G_CONNECT_SWAPPED);
 
     self->interface_settings = g_settings_new (INTERFACE_PATH_ID);
 

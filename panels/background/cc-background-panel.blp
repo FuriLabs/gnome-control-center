@@ -384,13 +384,35 @@ template $CcBackgroundPanel: $CcPanel {
               notify::selected => $on_wallpaper_mode_changed_cb(template);
             }
 
+            Adw.ComboRow fit_row {
+              title: _("Fit");
+              subtitle: _("How a picture is sized to the screen.");
+
+              model: StringList {
+                strings [
+                  _("Fill"),
+                  _("Fit"),
+                  _("Stretch"),
+                  _("Centered"),
+                  _("Tiled"),
+                  _("Spanned"),
+                ]
+              };
+
+              notify::selected => $on_fit_changed_cb(template);
+            }
+          }
+
+          Adw.PreferencesGroup {
             Adw.Bin chooser_bin {
               styles [
                 "card",
               ]
+
               accessibility {
                 label: _("Background");
               }
+
               accessible-role: group;
 
               $CcBackgroundChooser background_chooser {
@@ -425,7 +447,9 @@ template $CcBackgroundPanel: $CcPanel {
                   tooltip-text: _("Turn off wallpaper rotation");
                   clicked => $on_wallpaper_folder_clear_cb(template);
 
-                  styles ["flat"]
+                  styles [
+                    "flat",
+                  ]
                 }
               }
             }

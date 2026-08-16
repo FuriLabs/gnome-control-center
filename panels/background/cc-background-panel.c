@@ -47,6 +47,19 @@
 #define INTERFACE_COLOR_SCHEME_KEY "color-scheme"
 #define INTERFACE_ACCENT_COLOR_KEY "accent-color"
 
+#define FURIOS_SHELL_SCHEMA_ID "io.furios.phosh.shell"
+#define FURIOS_GLASS_THEME_KEY "glass-theme"
+#define FURIOS_GLASS_BLUR_RADIUS_KEY "glass-blur-radius"
+#define FURIOS_GLASS_OPACITY_KEY "glass-opacity"
+#define FURIOS_GLASS_LIGHTNESS_KEY "glass-lightness"
+#define FURIOS_GLASS_ACCENT_WASH_KEY "glass-accent-wash"
+#define FURIOS_ACCENT_COLOR_CUSTOM_KEY "accent-color-custom"
+#define FURIOS_GLASS_TEXT_COLOR_KEY "glass-text-color"
+#define FURIOS_GLASS_TEXT_OPACITY_KEY "glass-text-opacity"
+#define FURIOS_GLASS_ACCENT_TEXT_KEY "glass-accent-text-color"
+#define FURIOS_GLASS_TEXT_SHADOW_KEY "glass-text-shadow"
+#define FURIOS_GLASS_SHADOW_COLOR_KEY "glass-text-shadow-color"
+#define FURIOS_LOCKSCREEN_TINT_KEY "lockscreen-tint"
 #define PHOSH_PLUGINS_SCHEMA_ID "mobi.phosh.shell.plugins"
 #define PHOSH_STATUS_ICONS_KEY "status-icons"
 #define WEATHER_STATUS_ICON "weather-status-icon"
@@ -75,6 +88,29 @@ struct _CcBackgroundPanel {
     AdwPreferencesGroup *status_indicator_group;
     AdwSwitchRow *weather_status_switch;
     gboolean updating_weather_status;
+
+    GSettings *furios_shell_settings;
+    AdwPreferencesGroup *glass_theme_group;
+    AdwPreferencesGroup *glass_group;
+    AdwPreferencesGroup *text_glass_group;
+    GtkWidget *accent_custom_row;
+    GtkWidget *accent_text_row;
+    AdwSwitchRow *glass_theme_switch;
+    AdwSwitchRow *lockscreen_tint_switch;
+    GtkAdjustment *glass_blur_adjustment;
+    GtkAdjustment *glass_opacity_adjustment;
+    GtkAdjustment *glass_lightness_adjustment;
+    GtkAdjustment *glass_accent_wash_adjustment;
+    GtkColorDialogButton *custom_accent_button;
+    GtkColorDialogButton *text_color_button;
+    GtkColorDialogButton *accent_text_button;
+    GtkAdjustment *glass_text_opacity_adjustment;
+    GtkColorDialogButton *shadow_color_button;
+    GtkAdjustment *glass_text_shadow_adjustment;
+    gboolean updating_custom_accent;
+    gboolean updating_text_color;
+    gboolean updating_accent_text;
+    gboolean updating_shadow_color;
 };
 
 CC_PANEL_REGISTER (CcBackgroundPanel, cc_background_panel)
@@ -420,6 +456,241 @@ on_add_picture_button_clicked_cb (CcBackgroundPanel *self)
     cc_background_chooser_select_file (self->background_chooser);
 }
 
+/* glass-blur-radius is a uint, GtkAdjustment:value is a double. The range is
+ * the schema's own: the compositor quantises the radius into pyramid levels and
+ * saturates at 128, and the key refuses anything above it, which would leave the
+ * slider showing a value the shell never got.
+ */
+static gboolean
+glass_blur_get_mapping (GValue *value, GVariant *variant, gpointer user_data)
+{
+    g_value_set_double (value, (double) g_variant_get_uint32 (variant));
+
+    return TRUE;
+}
+
+static GVariant *
+glass_blur_set_mapping (const GValue *value, const GVariantType *type, gpointer user_data)
+{
+    double radius = CLAMP (g_value_get_double (value), 0.0, 128.0);
+
+    return g_variant_new_uint32 ((guint32) (radius + 0.5));
+}
+
+static void
+reload_custom_accent_button (CcBackgroundPanel *self)
+{
+    g_autofree char *custom = NULL;
+    GdkRGBA rgba;
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    custom = g_settings_get_string (self->furios_shell_settings, FURIOS_ACCENT_COLOR_CUSTOM_KEY);
+
+    /* Empty means "follow the swatches above". Since the button cannot have
+     * an unset colour, show it as transparent instead.
+     */
+    if (custom == NULL || *custom == '\0' || !gdk_rgba_parse (&rgba, custom))
+        rgba = (GdkRGBA) { 0.0, 0.0, 0.0, 0.0 };
+
+    self->updating_custom_accent = TRUE;
+    gtk_color_dialog_button_set_rgba (self->custom_accent_button, &rgba);
+    self->updating_custom_accent = FALSE;
+}
+
+static void
+on_custom_accent_changed_cb (GtkColorDialogButton *button,
+                             GParamSpec *pspec,
+                             CcBackgroundPanel *self)
+{
+    const GdkRGBA *rgba;
+    g_autofree char *hex = NULL;
+
+    if (self->updating_custom_accent || self->furios_shell_settings == NULL)
+        return;
+
+    rgba = gtk_color_dialog_button_get_rgba (self->custom_accent_button);
+    if (rgba == NULL)
+        return;
+
+    /* The shell wants a plain colour, not rgba() with an alpha channel */
+    hex = g_strdup_printf ("#%02x%02x%02x",
+                           (int) (CLAMP (rgba->red,   0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->green, 0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->blue,  0.0, 1.0) * 255.0 + 0.5));
+
+    g_settings_set_string (self->furios_shell_settings, FURIOS_ACCENT_COLOR_CUSTOM_KEY, hex);
+}
+
+static void
+on_custom_accent_clear_cb (GtkButton         *button,
+                           CcBackgroundPanel *self)
+{
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    g_settings_reset (self->furios_shell_settings, FURIOS_ACCENT_COLOR_CUSTOM_KEY);
+}
+
+static void
+reload_text_color_button (CcBackgroundPanel *self)
+{
+    g_autofree char *custom = NULL;
+    GdkRGBA rgba;
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    custom = g_settings_get_string (self->furios_shell_settings, FURIOS_GLASS_TEXT_COLOR_KEY);
+
+    if (custom == NULL || *custom == '\0' || !gdk_rgba_parse (&rgba, custom))
+        rgba = (GdkRGBA) { 0.0, 0.0, 0.0, 0.0 };
+
+    self->updating_text_color = TRUE;
+    gtk_color_dialog_button_set_rgba (self->text_color_button, &rgba);
+    self->updating_text_color = FALSE;
+}
+
+static void
+on_text_color_changed_cb (GtkColorDialogButton *button,
+                          GParamSpec *pspec,
+                          CcBackgroundPanel *self)
+{
+    const GdkRGBA *rgba;
+    g_autofree char *hex = NULL;
+
+    if (self->updating_text_color || self->furios_shell_settings == NULL)
+        return;
+
+    rgba = gtk_color_dialog_button_get_rgba (self->text_color_button);
+    if (rgba == NULL)
+        return;
+
+    /* The opacity is a separate setting, so only the colour goes here */
+    hex = g_strdup_printf ("#%02x%02x%02x",
+                           (int) (CLAMP (rgba->red,   0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->green, 0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->blue,  0.0, 1.0) * 255.0 + 0.5));
+
+    g_settings_set_string (self->furios_shell_settings, FURIOS_GLASS_TEXT_COLOR_KEY, hex);
+}
+
+static void
+on_text_color_clear_cb (GtkButton *button,
+                        CcBackgroundPanel *self)
+{
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    g_settings_reset (self->furios_shell_settings, FURIOS_GLASS_TEXT_COLOR_KEY);
+}
+
+static void
+reload_shadow_color_button (CcBackgroundPanel *self)
+{
+    g_autofree char *custom = NULL;
+    GdkRGBA rgba;
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    custom = g_settings_get_string (self->furios_shell_settings, FURIOS_GLASS_SHADOW_COLOR_KEY);
+
+    if (custom == NULL || *custom == '\0' || !gdk_rgba_parse (&rgba, custom))
+        rgba = (GdkRGBA) { 0.0, 0.0, 0.0, 0.0 };
+
+    self->updating_shadow_color = TRUE;
+    gtk_color_dialog_button_set_rgba (self->shadow_color_button, &rgba);
+    self->updating_shadow_color = FALSE;
+}
+
+static void
+on_shadow_color_changed_cb (GtkColorDialogButton *button,
+                            GParamSpec *pspec,
+                            CcBackgroundPanel *self)
+{
+    const GdkRGBA *rgba;
+    g_autofree char *hex = NULL;
+
+    if (self->updating_shadow_color || self->furios_shell_settings == NULL)
+        return;
+
+    rgba = gtk_color_dialog_button_get_rgba (self->shadow_color_button);
+    if (rgba == NULL)
+        return;
+
+    /* The strength is a separate setting, so only the colour goes here */
+    hex = g_strdup_printf ("#%02x%02x%02x",
+                           (int) (CLAMP (rgba->red,   0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->green, 0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->blue,  0.0, 1.0) * 255.0 + 0.5));
+
+    g_settings_set_string (self->furios_shell_settings, FURIOS_GLASS_SHADOW_COLOR_KEY, hex);
+}
+
+static void
+on_shadow_color_clear_cb (GtkButton *button,
+                          CcBackgroundPanel *self)
+{
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    g_settings_reset (self->furios_shell_settings, FURIOS_GLASS_SHADOW_COLOR_KEY);
+}
+
+static void
+reload_accent_text_button (CcBackgroundPanel *self)
+{
+    g_autofree char *custom = NULL;
+    GdkRGBA rgba;
+
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    custom = g_settings_get_string (self->furios_shell_settings, FURIOS_GLASS_ACCENT_TEXT_KEY);
+
+    if (custom == NULL || *custom == '\0' || !gdk_rgba_parse (&rgba, custom))
+        rgba = (GdkRGBA) { 0.0, 0.0, 0.0, 0.0 };
+
+    self->updating_accent_text = TRUE;
+    gtk_color_dialog_button_set_rgba (self->accent_text_button, &rgba);
+    self->updating_accent_text = FALSE;
+}
+
+static void
+on_accent_text_changed_cb (GtkColorDialogButton *button,
+                           GParamSpec *pspec,
+                           CcBackgroundPanel *self)
+{
+    const GdkRGBA *rgba;
+    g_autofree char *hex = NULL;
+
+    if (self->updating_accent_text || self->furios_shell_settings == NULL)
+        return;
+
+    rgba = gtk_color_dialog_button_get_rgba (self->accent_text_button);
+    if (rgba == NULL)
+        return;
+
+    hex = g_strdup_printf ("#%02x%02x%02x",
+                           (int) (CLAMP (rgba->red,   0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->green, 0.0, 1.0) * 255.0 + 0.5),
+                           (int) (CLAMP (rgba->blue,  0.0, 1.0) * 255.0 + 0.5));
+
+    g_settings_set_string (self->furios_shell_settings, FURIOS_GLASS_ACCENT_TEXT_KEY, hex);
+}
+
+static void
+on_accent_text_clear_cb (GtkButton *button,
+                         CcBackgroundPanel *self)
+{
+    if (self->furios_shell_settings == NULL)
+        return;
+
+    g_settings_reset (self->furios_shell_settings, FURIOS_GLASS_ACCENT_TEXT_KEY);
+}
+
 static gboolean
 weather_status_icon_is_enabled (CcBackgroundPanel *self)
 {
@@ -534,6 +805,147 @@ setup_weather_status_switch (CcBackgroundPanel *self)
                              G_CONNECT_SWAPPED);
 }
 
+static GSettings *
+ensure_furios_shell_settings (CcBackgroundPanel *self)
+{
+    GSettingsSchemaSource *schema_source;
+    g_autoptr (GSettingsSchema) schema = NULL;
+
+    if (self->furios_shell_settings != NULL)
+        return self->furios_shell_settings;
+
+    schema_source = g_settings_schema_source_get_default ();
+    if (schema_source != NULL)
+        schema = g_settings_schema_source_lookup (schema_source, FURIOS_SHELL_SCHEMA_ID, TRUE);
+
+    if (schema == NULL)
+        return NULL;
+
+    self->furios_shell_settings = g_settings_new_full (schema, NULL, NULL);
+
+    return self->furios_shell_settings;
+}
+
+static void
+set_glass_rows_visible (CcBackgroundPanel *self, gboolean visible)
+{
+    gtk_widget_set_visible (self->accent_custom_row, visible);
+    gtk_widget_set_visible (self->accent_text_row, visible);
+    gtk_widget_set_visible (GTK_WIDGET (self->text_glass_group), visible);
+    gtk_widget_set_visible (GTK_WIDGET (self->glass_theme_group), visible);
+    gtk_widget_set_visible (GTK_WIDGET (self->glass_group), visible);
+    gtk_widget_set_visible (GTK_WIDGET (self->lockscreen_tint_switch), visible);
+}
+
+static void
+setup_glass_group (CcBackgroundPanel *self)
+{
+    GSettingsSchemaSource *schema_source;
+    g_autoptr(GSettingsSchema) schema = NULL;
+    const char * const keys[] = {
+        FURIOS_GLASS_THEME_KEY,
+        FURIOS_GLASS_BLUR_RADIUS_KEY,
+        FURIOS_GLASS_OPACITY_KEY,
+        FURIOS_GLASS_LIGHTNESS_KEY,
+        FURIOS_GLASS_ACCENT_WASH_KEY,
+        FURIOS_ACCENT_COLOR_CUSTOM_KEY,
+        FURIOS_GLASS_TEXT_COLOR_KEY,
+        FURIOS_GLASS_TEXT_OPACITY_KEY,
+        FURIOS_GLASS_ACCENT_TEXT_KEY,
+        FURIOS_GLASS_TEXT_SHADOW_KEY,
+        FURIOS_GLASS_SHADOW_COLOR_KEY,
+        FURIOS_LOCKSCREEN_TINT_KEY,
+    };
+
+    schema_source = g_settings_schema_source_get_default ();
+
+    if (schema_source != NULL)
+        schema = g_settings_schema_source_lookup (schema_source,
+                                                  FURIOS_SHELL_SCHEMA_ID,
+                                                  TRUE);
+
+    for (guint i = 0; schema != NULL && i < G_N_ELEMENTS (keys); i++) {
+        if (!g_settings_schema_has_key (schema, keys[i])) {
+            g_clear_pointer (&schema, g_settings_schema_unref);
+            break;
+        }
+    }
+
+    if (schema == NULL || ensure_furios_shell_settings (self) == NULL) {
+        set_glass_rows_visible (self, FALSE);
+        return;
+    }
+
+    set_glass_rows_visible (self, TRUE);
+    g_settings_bind (self->furios_shell_settings, FURIOS_GLASS_THEME_KEY,
+                     self->glass_theme_switch, "active", G_SETTINGS_BIND_DEFAULT);
+
+    /* The rest of the glass settings only reach the shell while the theme is
+     * on, so they follow the switch rather than sitting there doing nothing */
+    g_object_bind_property (self->glass_theme_switch, "active",
+                            self->glass_group, "sensitive",
+                            G_BINDING_SYNC_CREATE);
+    g_object_bind_property (self->glass_theme_switch, "active",
+                            self->text_glass_group, "sensitive",
+                            G_BINDING_SYNC_CREATE);
+    /* The custom accent still applies without the glass theme, the text drawn
+     * on it does not */
+    g_object_bind_property (self->glass_theme_switch, "active",
+                            self->accent_text_row, "sensitive",
+                            G_BINDING_SYNC_CREATE);
+
+    g_settings_bind (self->furios_shell_settings, FURIOS_LOCKSCREEN_TINT_KEY,
+                     self->lockscreen_tint_switch, "active", G_SETTINGS_BIND_DEFAULT);
+
+    g_settings_bind_with_mapping (self->furios_shell_settings,
+                                  FURIOS_GLASS_BLUR_RADIUS_KEY,
+                                  self->glass_blur_adjustment, "value",
+                                  G_SETTINGS_BIND_DEFAULT,
+                                  glass_blur_get_mapping,
+                                  glass_blur_set_mapping,
+                                  NULL, NULL);
+    g_settings_bind (self->furios_shell_settings, FURIOS_GLASS_OPACITY_KEY,
+                     self->glass_opacity_adjustment, "value", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (self->furios_shell_settings, FURIOS_GLASS_LIGHTNESS_KEY,
+                     self->glass_lightness_adjustment, "value", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (self->furios_shell_settings, FURIOS_GLASS_ACCENT_WASH_KEY,
+                     self->glass_accent_wash_adjustment, "value", G_SETTINGS_BIND_DEFAULT);
+
+    g_settings_bind (self->furios_shell_settings, FURIOS_GLASS_TEXT_OPACITY_KEY,
+                     self->glass_text_opacity_adjustment, "value", G_SETTINGS_BIND_DEFAULT);
+    g_settings_bind (self->furios_shell_settings, FURIOS_GLASS_TEXT_SHADOW_KEY,
+                     self->glass_text_shadow_adjustment, "value", G_SETTINGS_BIND_DEFAULT);
+
+    reload_custom_accent_button (self);
+    reload_text_color_button (self);
+    reload_accent_text_button (self);
+    reload_shadow_color_button (self);
+
+    g_signal_connect_object (self->furios_shell_settings,
+                             "changed::" FURIOS_GLASS_ACCENT_TEXT_KEY,
+                             G_CALLBACK (reload_accent_text_button),
+                             self,
+                             G_CONNECT_SWAPPED);
+
+    g_signal_connect_object (self->furios_shell_settings,
+                             "changed::" FURIOS_GLASS_SHADOW_COLOR_KEY,
+                             G_CALLBACK (reload_shadow_color_button),
+                             self,
+                             G_CONNECT_SWAPPED);
+
+    g_signal_connect_object (self->furios_shell_settings,
+                             "changed::" FURIOS_GLASS_TEXT_COLOR_KEY,
+                             G_CALLBACK (reload_text_color_button),
+                             self,
+                             G_CONNECT_SWAPPED);
+
+    g_signal_connect_object (self->furios_shell_settings,
+                             "changed::" FURIOS_ACCENT_COLOR_CUSTOM_KEY,
+                             G_CALLBACK (reload_custom_accent_button),
+                             self,
+                             G_CONNECT_SWAPPED);
+}
+
 static const char *
 cc_background_panel_get_help_uri (CcPanel *panel)
 {
@@ -550,6 +962,7 @@ cc_background_panel_dispose (GObject *object)
     g_clear_object (&self->interface_settings);
     g_clear_object (&self->proxy);
     g_clear_object (&self->phosh_plugins_settings);
+    g_clear_object (&self->furios_shell_settings);
 
     G_OBJECT_CLASS (cc_background_panel_parent_class)->dispose (object);
 }
@@ -590,11 +1003,36 @@ cc_background_panel_class_init (CcBackgroundPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, dark_toggle);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, status_indicator_group);
     gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, weather_status_switch);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_group);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, text_glass_group);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, accent_custom_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, accent_text_row);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_theme_group);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_theme_switch);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, lockscreen_tint_switch);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_blur_adjustment);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_opacity_adjustment);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_lightness_adjustment);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_accent_wash_adjustment);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, custom_accent_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, text_color_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, accent_text_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_text_opacity_adjustment);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, shadow_color_button);
+    gtk_widget_class_bind_template_child (widget_class, CcBackgroundPanel, glass_text_shadow_adjustment);
 
     gtk_widget_class_bind_template_callback (widget_class, on_color_scheme_toggle_active_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_chooser_background_chosen_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_add_picture_button_clicked_cb);
     gtk_widget_class_bind_template_callback (widget_class, on_weather_status_switch_active_changed_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_custom_accent_changed_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_custom_accent_clear_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_text_color_changed_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_text_color_clear_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_accent_text_changed_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_accent_text_clear_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_shadow_color_changed_cb);
+    gtk_widget_class_bind_template_callback (widget_class, on_shadow_color_clear_cb);
 }
 
 static void
@@ -638,6 +1076,7 @@ cc_background_panel_init (CcBackgroundPanel *self)
     g_signal_connect_object (self->interface_settings, "changed::" INTERFACE_ACCENT_COLOR_KEY,
                              G_CALLBACK (reload_accent_color_toggles), self, G_CONNECT_SWAPPED);
 
+    setup_glass_group (self);
     setup_weather_status_switch (self);
 
     g_dbus_proxy_new_for_bus (G_BUS_TYPE_SESSION, G_DBUS_PROXY_FLAGS_NONE, NULL, "org.gnome.Shell", "/org/gnome/Shell",

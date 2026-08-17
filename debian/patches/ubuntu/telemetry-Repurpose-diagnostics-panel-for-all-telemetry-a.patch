@@ -458,7 +458,7 @@ index a0e2126..bb5f6cc 100644
  G_END_DECLS
 diff --git a/panels/privacy/telemetry/cc-telemetry-page.blp b/panels/privacy/telemetry/cc-telemetry-page.blp
 new file mode 100644
-index 0000000..675fe7d
+index 0000000..6fcf660
 --- /dev/null
 +++ b/panels/privacy/telemetry/cc-telemetry-page.blp
 @@ -0,0 +1,115 @@
@@ -482,35 +482,6 @@ index 0000000..675fe7d
 +      }
 +
 +      Adw.PreferencesPage {
-+        Adw.PreferencesGroup diagnostics_group {
-+          title: _("Error Reporting");
-+
-+          Adw.SwitchRow abrt_row {
-+            title: _("_Automatic Error Reporting");
-+            use-underline: true;
-+          }
-+
-+          Adw.ComboRow whoopsie_combo_row {
-+            title: _("Send error reports to Canonical");
-+            visible: false;
-+            use-underline: true;
-+            notify::selected-item => $whoopsie_combo_row_changed_cb(template);
-+          }
-+
-+          LinkButton diagnostics_learn_more_link_button {
-+            label: _("Learn more about error reporting");
-+            visible: bind $string_is_not_empty(diagnostics_learn_more_link_button.uri) as <bool>;
-+            margin-top: 8;
-+            halign: start;
-+
-+            styles [
-+              "dim",
-+              "body",
-+              "link-label",
-+            ]
-+          }
-+        }
-+
 +        Adw.PreferencesGroup insights_group {
 +          title: _("System Reporting");
 +          visible: false;
@@ -563,6 +534,35 @@ index 0000000..675fe7d
 +          LinkButton insights_learn_more_link_button {
 +            label: _("Learn more about system reporting");
 +            uri: "https://canonical.com/legal/systems-information-notice";
++            margin-top: 8;
++            halign: start;
++
++            styles [
++              "dim",
++              "body",
++              "link-label",
++            ]
++          }
++        }
++
++        Adw.PreferencesGroup diagnostics_group {
++          title: _("Error Reporting");
++
++          Adw.SwitchRow abrt_row {
++            title: _("_Automatic Error Reporting");
++            use-underline: true;
++          }
++
++          Adw.ComboRow whoopsie_combo_row {
++            title: _("Send error reports to Canonical");
++            visible: false;
++            use-underline: true;
++            notify::selected-item => $whoopsie_combo_row_changed_cb(template);
++          }
++
++          LinkButton diagnostics_learn_more_link_button {
++            label: _("Learn more about error reporting");
++            visible: bind $string_is_not_empty(diagnostics_learn_more_link_button.uri) as <bool>;
 +            margin-top: 8;
 +            halign: start;
 +

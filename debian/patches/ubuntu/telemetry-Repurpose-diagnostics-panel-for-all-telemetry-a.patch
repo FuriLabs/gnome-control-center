@@ -1503,7 +1503,7 @@ diff --git a/panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in b/pan
 similarity index 60%
 copy from panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in
 copy to panels/privacy/telemetry/org.gnome.controlcenter.insights-system-opt-out.policy.in.in
-index 7f550f3..e0ebd0c 100644
+index 7f550f3..511d8c2 100644
 --- a/panels/keyboard/org.gnome.controlcenter.keyboard.policy.in.in
 +++ b/panels/privacy/telemetry/org.gnome.controlcenter.insights-system-opt-out.policy.in.in
 @@ -2,21 +2,20 @@
@@ -1521,7 +1521,7 @@ index 7f550f3..e0ebd0c 100644
 -    <message>To change global keyboard settings, you need to authenticate.</message>
 +  <action id="org.gnome.controlcenter.insights-system-opt-out">
 +    <description>Change system-wide telemetry reporting</description>
-+    <message>Authentication is required to change system-wide telemetry reporting for all users</message>
++    <message>Authentication is required to change system reporting for all users</message>
      <defaults>
        <allow_any>no</allow_any>
        <allow_inactive>no</allow_inactive>

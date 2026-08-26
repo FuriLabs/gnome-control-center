@@ -19,7 +19,7 @@ varlink-based protocol.
  panels/system/system.gresource.xml                 |   4 +
  .../ubuntu-certified/assets/certified-logo.svg     | 130 +++++
  .../ubuntu-certified/cc-ubuntu-certified-page.blp  | 149 ++++++
- .../ubuntu-certified/cc-ubuntu-certified-page.c    | 286 +++++++++++
+ .../ubuntu-certified/cc-ubuntu-certified-page.c    | 287 +++++++++++
  .../ubuntu-certified/cc-ubuntu-certified-page.h}   |   5 +-
  .../gnome-ubuntu-certified-panel.desktop.in}       |  10 +-
  .../{region => ubuntu-certified}/meson.build       |  10 +-
@@ -31,7 +31,7 @@ varlink-based protocol.
  tests/certified_ubuntu/test-certified-ubuntu.c     | 140 ++++++
  tests/certified_ubuntu/test-certified.py           | 227 +++++++++
  tests/meson.build                                  |   1 +
- 26 files changed, 2005 insertions(+), 21 deletions(-)
+ 26 files changed, 2006 insertions(+), 21 deletions(-)
  create mode 100644 panels/system/certification-client.c
  create mode 100644 panels/system/certification-client.h
  create mode 100644 panels/system/com.ubuntu.hwctl.varlink
@@ -1340,10 +1340,10 @@ index 0000000..3facbd5
 \ No newline at end of file
 diff --git a/panels/system/ubuntu-certified/cc-ubuntu-certified-page.c b/panels/system/ubuntu-certified/cc-ubuntu-certified-page.c
 new file mode 100644
-index 0000000..cf64369
+index 0000000..b9dc0af
 --- /dev/null
 +++ b/panels/system/ubuntu-certified/cc-ubuntu-certified-page.c
-@@ -0,0 +1,286 @@
+@@ -0,0 +1,287 @@
 +/* -*- mode: C; c-file-style: "gnu"; indent-tabs-mode: nil; -*-
 + *
 + * Copyright (C) 2026 Canonical Ltd.
@@ -1453,6 +1453,7 @@ index 0000000..cf64369
 +    CcUbuntuCertifiedPage *self = CC_UBUNTU_CERTIFIED_PAGE (user_data);
 +
 +    if (!certification_client_update_certification_status_finish (obj, res, NULL)) {
++        set_status (self, CERTIFICATION_STATUS_API_NOT_AVAILABLE);
 +        return;
 +    }
 +

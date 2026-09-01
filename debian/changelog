@@ -1,10 +1,45 @@
-gnome-control-center (1:51~beta-1ubuntu2) UNRELEASED; urgency=medium
+gnome-control-center (1:51~rc.1-1ubuntu1) UNRELEASED; urgency=medium
 
   [ kkuo ]
   * d/p/ubuntu/telemetry: Move error reporting to after system reporting
   * d/p/ubuntu/telemetry: Use more concise language for auth message
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 01 Sep 2026 09:38:21 +0200
+  [ Alessandro Astone ]
+  * Merge with Debian 1:51~rc.1-1. Remaining changes:
+    + Add gnome-control-center-faces package to share with unity-control-center
+    + Install apport hook
+    + debian/control:
+      - Bump minimum malcontent version
+      - Build-Depend on libwhoopsie-preferences-dev
+      - Build-Depend on libinsights-dev
+      - Build-Depend on libdrm-dev
+      - Depend on language-selector-gnome & whoopsie-preferences
+      - Don't depend on desktop-base
+      - Recommend ibus
+      - Don't recommend libnss-myhostname since we use systemd-resolved
+      - Suggest instead of recommend gnome-user-share & realmd
+      - Suggest instead of depend on libjxl-gdk-pixbuf
+      - Suggest instead of recommend malcontent-gui
+    + debian/gnome-control-center-data.install,
+      debian/gnome-control-center-faces.install,
+      debian/control:
+      - Split 'faces' package, shared with unity-control-center
+    + debian/rules: Enable whoospie integration
+    + debian/rules: Enable insights integration
+    + debian/rules: set SSHD_SOCKET=ssh.socket via CPPFLAGS in debian/rules.
+    + Add misc patches
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 01 Sep 2026 09:41:21 +0200
+
+gnome-control-center (1:51~rc.1-1) unstable; urgency=medium
+
+  [ Jeremy Bícha ]
+  * New upstream release
+
+  [ Marco Trevisan (Treviño) ]
+  * Update minimum gsettings-desktop-schemas
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Tue, 01 Sep 2026 07:21:56 +0200
 
 gnome-control-center (1:51~beta-1ubuntu1) stonking; urgency=medium
 

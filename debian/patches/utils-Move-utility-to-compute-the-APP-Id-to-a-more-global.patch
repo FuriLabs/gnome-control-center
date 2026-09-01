@@ -117,7 +117,7 @@ index cbae415..29f8bc7 100644
 +char * cc_util_app_get_app_id (GAppInfo *app_info);
  char * cc_util_app_get_portal_id (GAppInfo *app_info);
 diff --git a/panels/notifications/cc-notifications-panel.c b/panels/notifications/cc-notifications-panel.c
-index 7fffcbd..ad33139 100644
+index 0b21884..871d38e 100644
 --- a/panels/notifications/cc-notifications-panel.c
 +++ b/panels/notifications/cc-notifications-panel.c
 @@ -31,6 +31,7 @@
@@ -128,7 +128,7 @@ index 7fffcbd..ad33139 100644
  
  #define MASTER_SCHEMA "org.gnome.desktop.notifications"
  #define APP_SCHEMA MASTER_SCHEMA ".application"
-@@ -419,9 +420,7 @@ select_app (CcNotificationsPanel *self, GtkListBoxRow *row)
+@@ -431,9 +432,7 @@ select_app (CcNotificationsPanel *self, GtkListBoxRow *row)
  
      app = g_object_get_qdata (G_OBJECT (row), application_quark ());
  

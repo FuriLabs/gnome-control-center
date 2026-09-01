@@ -49,7 +49,7 @@ index 4cde2d0..688bff8 100644
  }
  
 diff --git a/shell/style.css b/shell/style.css
-index 5fb0c6d..ae2199a 100644
+index 3cbcbd4..780a230 100644
 --- a/shell/style.css
 +++ b/shell/style.css
 @@ -165,7 +165,7 @@ flowboxchild.active-item .selected-check {

@@ -12,7 +12,7 @@ Subject: diagnostics: Add Whoopsie support
  6 files changed, 268 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 3894854..4f2bcdd 100644
+index 694cd15..a0b9b34 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -347,6 +347,14 @@ ssh_socket_activation = get_option('ssh_socket_activation')

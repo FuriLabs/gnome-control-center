@@ -1,4 +1,4 @@
-gnome-control-center (1:51~rc.1-1ubuntu1) UNRELEASED; urgency=medium
+gnome-control-center (1:51~rc.1-1ubuntu1) stonking; urgency=medium
 
   [ kkuo ]
   * d/p/ubuntu/telemetry: Move error reporting to after system reporting
@@ -28,8 +28,10 @@ gnome-control-center (1:51~rc.1-1ubuntu1) UNRELEASED; urgency=medium
     + debian/rules: Enable insights integration
     + debian/rules: set SSHD_SOCKET=ssh.socket via CPPFLAGS in debian/rules.
     + Add misc patches
+  * d/p: Drop patches applied upstream
+  * d/p: Refresh patches
 
- -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 01 Sep 2026 09:41:21 +0200
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 01 Sep 2026 10:22:31 +0200
 
 gnome-control-center (1:51~rc.1-1) unstable; urgency=medium
 

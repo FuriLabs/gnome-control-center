@@ -196,7 +196,7 @@ device_added_cb (CcDeviceComboRow *self,
     return;
 
   description = gvc_mixer_ui_device_get_description (device);
-  if (g_strcmp0 (description, "Parking port") == 0)
+  if (g_strcmp0 (description, "Parking port") == 0 || g_strcmp0 (description, "Input from voice call") == 0)
     return;
 
   stream_id = gvc_mixer_ui_device_get_stream_id (device);

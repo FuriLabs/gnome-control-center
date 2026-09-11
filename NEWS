@@ -1,3 +1,15 @@
+==========
+Version 51
+==========
+
+- Various translation updates
+
+Main Window
+- Revert "reparent sidebar on small screens" since it broke sub page animations
+
+Remote Desktop
+- Add translation comments to "Verify Fingerprint" string
+
 ===============
 Version 51.rc.1
 ===============

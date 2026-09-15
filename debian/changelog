@@ -1,3 +1,11 @@
+gnome-control-center (1:51.0-1) unstable; urgency=medium
+
+  * New upstream release
+  * Update minimum gtk4
+  * Remove "50 release notes" patch
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Fri, 11 Sep 2026 20:14:48 +0200
+
 gnome-control-center (1:51~rc.1-1ubuntu1) stonking; urgency=medium
 
   [ kkuo ]

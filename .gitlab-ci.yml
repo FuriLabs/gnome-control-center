@@ -74,7 +74,7 @@ stages:
     # Should probably also switch away from 'rawhide',
     # to stable fedora branch as well.
     BRANCH_NAME: 'main'
-    CONTAINER_TAG: '2026-07-13'
+    CONTAINER_TAG: '2026-08-31'
     FEDORA_VERSION: rawhide
     # Derive FDO variables from this automatically.
     # DO NOT edit, instead change the variables above
@@ -116,6 +116,7 @@ build.container.fedora@x86_64:
       libsass-devel sassc
       libsoup3-devel
     FDO_DISTRIBUTION_EXEC: |-
+      dnf config-manager setopt fedora-cisco-openh264.enabled=0 && \
       dnf builddep -y gnome-control-center && \
       dnf builddep -y gsettings-desktop-schemas && \
       dnf builddep -y gtk4 && \

@@ -1,3 +1,41 @@
+gnome-control-center (1:51.0-1ubuntu1) stonking; urgency=medium
+
+  * Merge with Debian 1:51~rc.1-1. Remaining changes:
+    + Add gnome-control-center-faces package to share with unity-control-center
+    + Install apport hook
+    + debian/control:
+      - Bump minimum malcontent version
+      - Bump minimum gtk version
+      - Bump minimum accountsservice version
+      - Build-Depend on libwhoopsie-preferences-dev
+      - Build-Depend on libinsights-dev
+      - Build-Depend on libdrm-dev
+      - Depend on language-selector-gnome & whoopsie-preferences
+      - Don't depend on desktop-base
+      - Recommend ibus
+      - Don't recommend libnss-myhostname since we use systemd-resolved
+      - Suggest instead of recommend gnome-user-share & realmd
+      - Suggest instead of depend on libjxl-gdk-pixbuf
+      - Suggest instead of recommend malcontent-gui
+    + debian/gnome-control-center-data.install,
+      debian/gnome-control-center-faces.install,
+      debian/control:
+      - Split 'faces' package, shared with unity-control-center
+    + debian/rules: Enable whoospie integration
+    + debian/rules: Enable insights integration
+    + debian/rules: set SSHD_SOCKET=ssh.socket via CPPFLAGS in debian/rules.
+    + Drop unwanted patches that debian carries in order to lower the required
+      version of various dependencies:
+      - d/p/debian/meson:relax-malcontent-version.patch
+      - d/p/debian/Revert-wellbeing-Synchronize-settings-with-malcontent.patch
+      - d/p/debian/Revert-datetime-Use-GtkEnumList.patch
+      - d/p/debian/Revert-users-Disable-keeping-data-if-deleting-homed-user.patch
+    + Add misc patches
+  * d/control: Bump minimum accountsservice
+  * d/p/u: Refresh patches
+
+ -- Alessandro Astone <alessandro.astone@canonical.com>  Tue, 15 Sep 2026 16:38:32 +0200
+
 gnome-control-center (1:51.0-1) unstable; urgency=medium
 
   * New upstream release

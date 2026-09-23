@@ -101,6 +101,10 @@ struct _CcDisplayPanel {
     GtkShortcut *escape_shortcut;
 
     GSettings *display_settings;
+
+    AdwSwitchRow *wake_gesture_row;
+    AdwSwitchRow *tilt_wake_gesture_row;
+    GSettings *gesture_settings;
 };
 
 enum {
@@ -555,6 +559,8 @@ cc_display_panel_class_init (CcDisplayPanelClass *klass)
     gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, night_light_row);
     gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, primary_display_row);
     gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, single_display_settings_group);
+    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, wake_gesture_row);
+    gtk_widget_class_bind_template_child (widget_class, CcDisplayPanel, tilt_wake_gesture_row);
 
     gtk_widget_class_bind_template_callback (widget_class, apply_current_configuration);
     gtk_widget_class_bind_template_callback (widget_class, cancel_current_configuration);
@@ -973,6 +979,8 @@ static void
 cc_display_panel_init (CcDisplayPanel *self)
 {
     g_autoptr(GtkExpression) expression = NULL;
+    g_autoptr(GSettingsSchema) gesture_schema = NULL;
+    GSettingsSchemaSource *schema_source = NULL;
 
     g_resources_register (cc_display_get_resource ());
 
@@ -1025,6 +1033,30 @@ cc_display_panel_init (CcDisplayPanel *self)
     g_signal_connect_object (self->display_settings, "changed::night-light-enabled",
                              G_CALLBACK (on_night_light_enabled_changed_cb), self, G_CONNECT_SWAPPED);
     on_night_light_enabled_changed_cb (self);
+
+    schema_source = g_settings_schema_source_get_default ();
+    if (schema_source)
+        gesture_schema = g_settings_schema_source_lookup (schema_source, "io.furios.gesture", TRUE);
+    else
+        gesture_schema = NULL;
+
+    gesture_schema = g_settings_schema_source_lookup (schema_source, "io.furios.gesture", TRUE);
+    if (gesture_schema)
+        self->gesture_settings = g_settings_new ("io.furios.gesture");
+    else
+        self->gesture_settings = NULL;
+
+    if (self->gesture_settings) {
+        g_settings_bind (self->gesture_settings, "wake-sensor-enabled",
+                         self->wake_gesture_row, "active",
+                         G_SETTINGS_BIND_DEFAULT);
+        g_settings_bind (self->gesture_settings, "tilt-sensor-enabled",
+                         self->tilt_wake_gesture_row, "active",
+                         G_SETTINGS_BIND_DEFAULT);
+    } else {
+        gtk_widget_set_visible (GTK_WIDGET (self->wake_gesture_row), FALSE);
+        gtk_widget_set_visible (GTK_WIDGET (self->tilt_wake_gesture_row), FALSE);
+    }
 }
 
 CcDisplayConfigManager *

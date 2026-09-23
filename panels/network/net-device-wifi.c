@@ -79,6 +79,7 @@ struct _NetDeviceWifi {
     CcPanel *panel;
     NMClient *client;
     NMDevice *device;
+    NMDevice *ap_device;
     gboolean updating_device;
     gchar *selected_ssid_title;
     gchar *selected_connection_id;
@@ -152,15 +153,43 @@ static gboolean
 device_is_hotspot (NetDeviceWifi *self)
 {
     NMConnection *c;
+    const char *device_name;
 
-    if (nm_device_get_active_connection (self->device) == NULL)
+    if (self->ap_device != NULL)
+        device_name = nm_device_get_iface (self->ap_device);
+    else
+        device_name = nm_device_get_iface (self->device);
+
+    g_debug ("Checking if device %s is a hotspot", device_name);
+
+    if (self->ap_device != NULL) {
+        if (nm_device_get_active_connection (self->ap_device) == NULL) {
+            g_debug ("No active connection found for device %s.", device_name);
+            return FALSE;
+        }
+        c = find_connection_for_device (self, self->ap_device);
+    } else {
+        if (nm_device_get_active_connection (self->device) == NULL) {
+            g_debug ("No active connection found for device %s.", device_name);
+            return FALSE;
+        }
+        c = find_connection_for_device (self, self->device);
+    }
+
+    if (c == NULL) {
+        g_debug ("No connection found for device %s.", device_name);
         return FALSE;
+    }
 
-    c = find_connection_for_device (self, self->device);
-    if (c == NULL)
-        return FALSE;
+    gboolean is_shared = connection_is_shared (c);
+    g_debug ("Connection for device %s is %sshared.", device_name, is_shared ? "" : "not ");
 
-    return connection_is_shared (c);
+    if (is_shared)
+        gtk_widget_set_sensitive (GTK_WIDGET (self->hotspot_row), FALSE);
+    else
+        gtk_widget_set_sensitive (GTK_WIDGET (self->hotspot_row), TRUE);
+
+    return is_shared;
 }
 
 static GBytes *
@@ -249,10 +278,10 @@ nm_device_wifi_refresh_hotspot (NetDeviceWifi *self)
     g_autofree gchar *hotspot_ssid = NULL;
 
     /* refresh hotspot ui */
-    ssid = device_get_hotspot_ssid (self, self->device);
+    ssid = device_get_hotspot_ssid (self, self->ap_device);
     if (ssid)
         hotspot_ssid = nm_utils_ssid_to_utf8 (g_bytes_get_data (ssid, NULL), g_bytes_get_size (ssid));
-    device_get_hotspot_security_details (self, self->device, &hotspot_secret, &hotspot_security);
+    device_get_hotspot_security_details (self, self->ap_device, &hotspot_secret, &hotspot_security);
 
     g_debug ("Refreshing hotspot labels to name: '%s', security key: '%s', security: '%s'", hotspot_ssid,
              hotspot_secret, hotspot_security);
@@ -555,7 +584,7 @@ net_device_wifi_get_hotspot_connection (NetDeviceWifi *self)
     GSList *connections, *l;
     NMConnection *c = NULL;
 
-    connections = net_device_get_valid_connections (self->client, self->device);
+    connections = net_device_get_valid_connections (self->client, self->ap_device);
     for (l = connections; l; l = l->next) {
         NMConnection *tmp = l->data;
         if (is_hotspot_connection (tmp)) {
@@ -588,7 +617,7 @@ overwrite_ssid_cb (GObject *source_object, GAsyncResult *res, gpointer user_data
     c = net_device_wifi_get_hotspot_connection (self);
 
     g_debug ("activate existing hotspot connection\n");
-    nm_client_activate_connection_async (self->client, c, self->device, NULL, self->cancellable, activate_cb, self);
+    nm_client_activate_connection_async (self->client, c, self->ap_device, NULL, self->cancellable, activate_cb, self);
 }
 
 static void
@@ -601,7 +630,7 @@ on_wifi_hotspot_dialog_response_cb (AdwDialog *dialog, NetDeviceWifi *self)
         nm_remote_connection_commit_changes_async (NM_REMOTE_CONNECTION (connection), TRUE, self->cancellable,
                                                    overwrite_ssid_cb, self);
     else
-        nm_client_add_and_activate_connection_async (self->client, connection, self->device, NULL, self->cancellable,
+        nm_client_add_and_activate_connection_async (self->client, connection, self->ap_device, NULL, self->cancellable,
                                                      activate_new_cb, self);
 }
 
@@ -614,7 +643,7 @@ start_hotspot (NetDeviceWifi *self)
     g_autofree gchar *ssid = NULL;
 
     hotspot_dialog = cc_wifi_hotspot_dialog_new ();
-    cc_wifi_hotspot_dialog_set_device (hotspot_dialog, NM_DEVICE_WIFI (self->device));
+    cc_wifi_hotspot_dialog_set_device (hotspot_dialog, NM_DEVICE_WIFI (self->ap_device));
     hostname = cc_hostname_get_display_hostname (cc_hostname_get_default ());
     ssid = pretty_hostname_to_ssid (hostname);
     cc_wifi_hotspot_dialog_set_hostname (hotspot_dialog, ssid);
@@ -641,7 +670,7 @@ stop_shared_connection (NetDeviceWifi *self)
         c = (NMActiveConnection *) connections->pdata[i];
 
         devices = nm_active_connection_get_devices (c);
-        if (devices && devices->pdata[0] == self->device) {
+        if (devices && devices->pdata[0] == self->ap_device) {
             nm_client_deactivate_connection_async (self->client, c, NULL, NULL, NULL);
             found = TRUE;
             break;
@@ -652,6 +681,13 @@ stop_shared_connection (NetDeviceWifi *self)
         g_warning ("Could not stop hotspot connection as no connection attached to the device could be found.");
         return;
     }
+
+    /* we now have two different interfaces, one for AP and one for client
+     * request to deactivate is async and it will finish before hotspot is fully disabaled
+     * in wifi_refresh_ui we're querying NM again for hotspot, because its not fully done yet, it will get confused and show as hotspot enabled
+     * wait a little for nm to deactivate fully then continue
+     */
+    g_usleep (1000000);
 
     nm_device_wifi_refresh_ui (self);
 }
@@ -1082,6 +1118,18 @@ net_device_wifi_new (CcPanel *panel, NMClient *client, NMDevice *device)
     g_signal_connect_object (list, "show_qr_code", G_CALLBACK (show_qr_code_for_row), self, G_CONNECT_SWAPPED);
 
     nm_client_on_permission_change (self);
+
+    const GPtrArray *devices = nm_client_get_devices (client);
+    for (guint i = 0; i < devices->len; i++) {
+        NMDevice *device = g_ptr_array_index (devices, i);
+        const char *iface = nm_device_get_iface (device);
+        if (g_strcmp0 (iface, "ap0") == 0)
+            self->ap_device = g_object_ref (device);
+    }
+
+    /* if we don't have an AP specific interface just use the wifi one */
+    if (self->ap_device == NULL)
+        self->ap_device = g_object_ref (self->device);
 
     nm_device_wifi_refresh_ui (self);
 

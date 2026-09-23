@@ -52,6 +52,7 @@ gboolean cc_wwan_data_set_default_apn (CcWwanData *self, CcWwanDataApn *apn);
 CcWwanDataApn *cc_wwan_data_get_default_apn (CcWwanData *self);
 gboolean cc_wwan_data_get_enabled (CcWwanData *self);
 void cc_wwan_data_set_enabled (CcWwanData *self, gboolean enabled);
+void cc_wwan_data_set_roaming_allowance (CcWwanData *self, gboolean allow_roaming);
 gboolean cc_wwan_data_get_roaming_enabled (CcWwanData *self);
 void cc_wwan_data_set_roaming_enabled (CcWwanData *self, gboolean enable_roaming);
 

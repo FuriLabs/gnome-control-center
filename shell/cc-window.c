@@ -407,6 +407,76 @@ switch_to_previous_panel (CcWindow *self)
     CC_EXIT;
 }
 
+static gboolean
+can_swipe_back (CcWindow *self)
+{
+    GListModel *stack;
+    AdwNavigationPage *visible_page;
+
+    if (!adw_navigation_split_view_get_collapsed (self->split_view))
+        return FALSE;
+
+    stack = adw_navigation_view_get_navigation_stack (self->navigation);
+    if (g_list_model_get_n_items (stack) > 1) {
+        visible_page = adw_navigation_view_get_visible_page (self->navigation);
+        return visible_page != NULL && adw_navigation_page_get_can_pop (visible_page);
+    }
+
+    return !self->single_panel_mode &&
+           adw_navigation_split_view_get_show_content (self->split_view);
+}
+
+static void
+swipe_back (CcWindow *self)
+{
+    GListModel *stack;
+
+    stack = adw_navigation_view_get_navigation_stack (self->navigation);
+    if (g_list_model_get_n_items (stack) > 1) {
+        adw_navigation_view_pop (self->navigation);
+        return;
+    }
+
+    if (!self->single_panel_mode)
+        adw_navigation_split_view_set_show_content (self->split_view, FALSE);
+}
+
+static void
+back_swipe_drag_update_cb (GtkGestureDrag *gesture,
+                           double          offset_x,
+                           double          offset_y,
+                           CcWindow       *self)
+{
+    if (!can_swipe_back (self)) {
+        gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_DENIED);
+        return;
+    }
+
+    if (offset_x < 0 || ABS (offset_y) > ABS (offset_x)) {
+        if (ABS (offset_x) > 12 || ABS (offset_y) > 12)
+            gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_DENIED);
+        return;
+    }
+
+    if (offset_x > 12)
+        gtk_gesture_set_state (GTK_GESTURE (gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+}
+
+static void
+back_swipe_drag_end_cb (GtkGestureDrag *gesture,
+                        double          offset_x,
+                        double          offset_y,
+                        CcWindow       *self)
+{
+    (void) gesture;
+
+    if (offset_x < 64 || ABS (offset_y) > ABS (offset_x))
+        return;
+
+    if (can_swipe_back (self))
+        swipe_back (self);
+}
+
 /* Callbacks */
 
 static void
@@ -774,7 +844,16 @@ cc_window_class_init (CcWindowClass *klass)
 static void
 cc_window_init (CcWindow *self)
 {
+    GtkGesture *back_swipe;
+
     gtk_widget_init_template (GTK_WIDGET (self));
+
+    back_swipe = gtk_gesture_drag_new ();
+    gtk_gesture_single_set_touch_only (GTK_GESTURE_SINGLE (back_swipe), TRUE);
+    gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (back_swipe), GTK_PHASE_CAPTURE);
+    g_signal_connect (back_swipe, "drag-update", G_CALLBACK (back_swipe_drag_update_cb), self);
+    g_signal_connect (back_swipe, "drag-end", G_CALLBACK (back_swipe_drag_end_cb), self);
+    gtk_widget_add_controller (GTK_WIDGET (self), GTK_EVENT_CONTROLLER (back_swipe));
 
     self->settings = g_settings_new ("org.gnome.Settings");
     self->previous_panels = g_queue_new ();

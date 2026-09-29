@@ -176,11 +176,6 @@ cc_level_bar_set_stream (CcLevelBar *self, GvcMixerStream *stream, CcStreamType 
     pa_stream_set_read_callback (self->level_stream, read_cb, self);
     pa_stream_set_suspended_callback (self->level_stream, suspended_cb, self);
 
-    if (type == CC_STREAM_TYPE_INPUT) {
-        guint sink_idx = gvc_mixer_stream_get_id (stream);
-        pa_stream_set_monitor_stream (self->level_stream, sink_idx);
-    }
-
     memset (&attr, 0, sizeof (attr));
     attr.fragsize = sizeof (float);
     attr.maxlength = (uint32_t) -1;
